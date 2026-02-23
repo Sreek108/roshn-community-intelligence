@@ -800,8 +800,8 @@ NAV_PAGES = [
     "Payment Risk",
     "Complaints",
     "Sentiment",
-    "Lead Intelligence",
-    "Demand Forecast",
+    "Leads",
+    "Demand",
     "AI Performance",
     "Resident Dive",
 ]
@@ -2555,9 +2555,9 @@ elif page == "Complaints":
     page_complaint_intelligence(residents_f, complaints_f)
 elif page == "Sentiment":
     page_sentiment_satisfaction(residents_f, interactions_f, complaints_f)
-elif page == "Lead Intelligence":
+elif page == "Leads":
     page_lead_intelligence(leads_f)
-elif page == "Demand Forecast":
+elif page == "Demand":
     page_demand_forecasting(bookings_f, complaints_f, interactions_f)
 elif page == "AI Performance":
     page_ai_performance(interactions_f, residents_f, leads_f)
