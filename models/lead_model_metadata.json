@@ -1,0 +1,30 @@
+{
+  "best_model": "Logistic Regression",
+  "best_auc": 0.8408,
+  "cv_auc_mean": 0.812,
+  "cv_auc_std": 0.0209,
+  "n_features": 23,
+  "training_samples": 1545,
+  "test_samples": 387,
+  "total_leads": 8000,
+  "active_leads_scored": 6068,
+  "hot_leads": 5025,
+  "warm_leads": 704,
+  "models": {
+    "Logistic Regression": {
+      "auc": 0.8408,
+      "f1": 0.75,
+      "accuracy": 0.7726
+    },
+    "Random Forest": {
+      "auc": 0.8188,
+      "f1": 0.7345,
+      "accuracy": 0.7571
+    },
+    "Gradient Boosting": {
+      "auc": 0.7954,
+      "f1": 0.7011,
+      "accuracy": 0.7313
+    }
+  }
+}

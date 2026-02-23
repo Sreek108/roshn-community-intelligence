@@ -1,0 +1,38 @@
+{
+  "project": "ROSHN Community Intelligence - Payment Default Prediction",
+  "version": "1.0",
+  "trained_at": "2026-02-17 08:26:23",
+  "dataset_size": 30000,
+  "num_features": 58,
+  "best_model": "Logistic Regression",
+  "model_results": {
+    "Logistic Regression": {
+      "ROC-AUC": 0.6495,
+      "F1": 0.3759,
+      "Accuracy": 0.6027,
+      "Avg Precision": 0.3009
+    },
+    "Random Forest": {
+      "ROC-AUC": 0.6404,
+      "F1": 0.3191,
+      "Accuracy": 0.7162,
+      "Avg Precision": 0.2914
+    },
+    "Gradient Boosting": {
+      "ROC-AUC": 0.6122,
+      "F1": 0.076,
+      "Accuracy": 0.7892,
+      "Avg Precision": 0.2684
+    }
+  },
+  "best_roc_auc": 0.6495,
+  "best_f1": 0.3759,
+  "default_rate": 0.2,
+  "risk_distribution": {
+    "Low": 13632,
+    "Very Low": 11969,
+    "Medium": 2800,
+    "High": 174,
+    "Critical": 2
+  }
+}
