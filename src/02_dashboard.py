@@ -85,41 +85,9 @@ st.markdown("""
     }
 
     /* ==================================================================
-       CSS VARIABLES - Dark Mode
+       Dark Mode - DISABLED (forced light mode for consistent demo)
+       To re-enable: uncomment and wrap in @media (prefers-color-scheme: dark) { }
        ================================================================== */
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --bg-primary: #0F1117;
-            --bg-card: #1A1C25;
-            --bg-sidebar: linear-gradient(180deg, #1A1C25 0%, #0F1117 100%);
-            --bg-section: linear-gradient(90deg, #1A1C25 0%, transparent 100%);
-            --bg-chart: #1A1C25;
-            --bg-plot: #141620;
-
-            --text-primary: #EAEDF3;
-            --text-secondary: #B0B8C8;
-            --text-muted: #7A8599;
-            --text-heading2: #D4A017;
-            --text-sidebar: #B0B8C8;
-            --text-chart: #EAEDF3;
-
-            --border-main: #2A2D38;
-            --border-grid: #22252F;
-            --border-sidebar: #2A2D38;
-
-            --accent-gold: #D4A017;
-            --accent-hover: rgba(212, 160, 23, 0.15);
-
-            --alert-bg: #1A1C25;
-            --alert-text: #EAEDF3;
-
-            --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
-            --shadow-hover: 0 12px 32px rgba(212, 160, 23, 0.12);
-
-            --hover-bg: #D4A017;
-            --hover-text: #0F1117;
-        }
-    }
 
     /* ==================================================================
        GLOBAL STYLES
@@ -611,28 +579,17 @@ st.markdown("""
     .detail-row .value { color: var(--text-primary); font-weight: 500; font-size: 13px; }
 </style>
 
-<!-- Detect system dark mode and pass to Streamlit via a hidden element -->
+<!-- Force light theme -->
 <script>
-    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-    
-    // Send theme info to Streamlit
-    const el = document.createElement('div');
-    el.id = 'theme-detector';
-    el.setAttribute('data-dark', isDark);
-    el.style.display = 'none';
-    document.body.appendChild(el);
+    document.documentElement.setAttribute('data-theme', 'light');
 </script>
 """, unsafe_allow_html=True)
 
 # ============================================================================
 # DETECT THEME FOR PLOTLY
 # ============================================================================
-# Streamlit exposes theme info - detect if dark mode
-_streamlit_theme = st.get_option("theme.base") if st.get_option("theme.base") else "light"
-
-# Check if Streamlit is in dark mode
-IS_DARK = _streamlit_theme == "dark"
+# Force light mode for consistent demo experience
+IS_DARK = False
 
 # ============================================================================
 # PLOTLY THEME - Auto adapts to dark/light
@@ -818,10 +775,7 @@ def render_top_nav():
             <span class="diamond">◆</span>
             <span class="subtitle">Community Intelligence</span>
         </div>
-        <div class="header-meta">
-            <span>LIVE</span>&ensp;
-            <span class="time">◉ {datetime.now().strftime("%d %b %Y, %H:%M")}</span>
-        </div>
+
     </div>
     """, unsafe_allow_html=True)
 
