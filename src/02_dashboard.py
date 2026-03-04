@@ -775,7 +775,10 @@ def render_top_nav():
             <span class="diamond">◆</span>
             <span class="subtitle">Community Intelligence</span>
         </div>
-
+        <div class="header-meta">
+            <span>LIVE</span>&ensp;
+            <span class="time">◉ {datetime.now().strftime("%d %b %Y, %H:%M")}</span>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -888,6 +891,28 @@ def page_executive_summary(residents, payments, complaints, bookings, interactio
             fig = px.bar(risk_comm, x="community", y="count", color="risk_category", barmode="stack")
             fig.update_layout(**PLOT_LAYOUT, height=400)
             st.plotly_chart(fig, use_container_width=True)
+        
+        # DRILL-DOWN: Community detail
+        comm_list = sorted(residents["community"].unique())
+        selected_comm = st.selectbox("🔍 Drill into community", ["Select a community..."] + comm_list, key="overview_comm_drill")
+        if selected_comm != "Select a community...":
+            comm_data = residents[residents["community"] == selected_comm]
+            risk_col = "predicted_risk_grade" if "predicted_risk_grade" in residents.columns else "risk_category"
+            with st.expander(f"📊 {selected_comm} — {len(comm_data):,} residents", expanded=True):
+                dc1, dc2, dc3, dc4 = st.columns(4)
+                dc1.metric("Residents", f"{len(comm_data):,}")
+                dc2.metric("Default Rate", f"{comm_data['default_flag'].mean()*100:.1f}%")
+                dc3.metric("Avg Credit Score", f"{comm_data['credit_score'].mean():.0f}")
+                dc4.metric("Portfolio", f"{comm_data['property_value_aed'].sum()/1e9:.1f}B SAR")
+                drill_risk = comm_data[risk_col].value_counts().sort_index()
+                fig_d = go.Figure(data=[go.Bar(
+                    x=drill_risk.index, y=drill_risk.values,
+                    marker_color=[RISK_COLORS.get(k, COLORS["teal"]) for k in drill_risk.index],
+                    text=drill_risk.values, textposition="outside", textfont=dict(color=CHART_TEXT_COLOR)
+                )])
+                fig_d.update_layout(**PLOT_LAYOUT, height=280, xaxis_title="", yaxis_title="Residents",
+                                   title=f"Risk Distribution — {selected_comm}")
+                st.plotly_chart(fig_d, use_container_width=True)
     
     with col2:
         section_header("Portfolio Risk Overview", "🎯")
@@ -1082,6 +1107,42 @@ def page_payment_risk(residents, payments):
         ))
         fig.update_layout(**PLOT_LAYOUT, height=350, xaxis_title="", yaxis_title="")
         st.plotly_chart(fig, use_container_width=True)
+        
+        # DRILL-DOWN: Zone × Community risk detail
+        drill_cols_pr = st.columns(2)
+        with drill_cols_pr[0]:
+            zone_drill = st.selectbox("🔍 Drill into zone", ["Select a zone..."] + sorted(residents["zone"].unique().tolist()), key="risk_zone_drill")
+        with drill_cols_pr[1]:
+            comm_drill_r = st.selectbox("🔍 Drill into community", ["Select a community..."] + sorted(residents["community"].unique().tolist()), key="risk_comm_drill")
+        
+        if zone_drill != "Select a zone..." or comm_drill_r != "Select a community...":
+            drill_res = residents.copy()
+            drill_parts = []
+            if zone_drill != "Select a zone...":
+                drill_res = drill_res[drill_res["zone"] == zone_drill]
+                drill_parts.append(zone_drill)
+            if comm_drill_r != "Select a community...":
+                drill_res = drill_res[drill_res["community"] == comm_drill_r]
+                drill_parts.append(comm_drill_r)
+            
+            with st.expander(f"🛡️ {' — '.join(drill_parts)} — {len(drill_res):,} residents", expanded=True):
+                dc1, dc2, dc3, dc4 = st.columns(4)
+                dc1.metric("Residents", f"{len(drill_res):,}")
+                dc2.metric("Default Rate", f"{drill_res['default_flag'].mean()*100:.1f}%")
+                dc3.metric("Avg DPD", f"{drill_res['current_dpd'].mean():.0f} days")
+                dc4.metric("Avg Credit", f"{drill_res['credit_score'].mean():.0f}")
+                
+                if has_predictions:
+                    rg = drill_res["predicted_risk_grade"].value_counts().sort_index()
+                else:
+                    rg = drill_res["risk_category"].value_counts().sort_index()
+                fig_rg = go.Figure(data=[go.Bar(
+                    x=rg.index, y=rg.values,
+                    marker_color=[RISK_COLORS.get(k, COLORS["teal"]) for k in rg.index],
+                    text=rg.values, textposition="outside", textfont=dict(color=CHART_TEXT_COLOR)
+                )])
+                fig_rg.update_layout(**PLOT_LAYOUT, height=260, xaxis_title="Risk Grade", yaxis_title="Residents")
+                st.plotly_chart(fig_rg, use_container_width=True)
     
     with tab2:
         section_header("Early Warning Alerts — High Risk Residents", "⚠️")
@@ -1215,6 +1276,43 @@ def page_complaint_intelligence(residents, complaints):
     fig.update_layout(**PLOT_LAYOUT, height=400, xaxis_title="", yaxis_title="")
     fig.update_xaxes(tickangle=-45)
     st.plotly_chart(fig, use_container_width=True)
+    
+    # DRILL-DOWN: Zone × Category
+    drill_cols = st.columns(2)
+    with drill_cols[0]:
+        zone_pick = st.selectbox("🔍 Drill into zone", ["Select a zone..."] + sorted(complaints["zone"].unique().tolist()), key="comp_zone_drill")
+    with drill_cols[1]:
+        cat_pick = st.selectbox("🔍 Drill into category", ["Select a category..."] + sorted(complaints["category"].unique().tolist()), key="comp_cat_drill")
+    
+    if zone_pick != "Select a zone..." or cat_pick != "Select a category...":
+        drill_df = complaints.copy()
+        drill_title_parts = []
+        if zone_pick != "Select a zone...":
+            drill_df = drill_df[drill_df["zone"] == zone_pick]
+            drill_title_parts.append(zone_pick)
+        if cat_pick != "Select a category...":
+            drill_df = drill_df[drill_df["category"] == cat_pick]
+            drill_title_parts.append(cat_pick)
+        
+        with st.expander(f"📋 {' — '.join(drill_title_parts)} — {len(drill_df):,} complaints", expanded=True):
+            dc1, dc2, dc3, dc4 = st.columns(4)
+            dc1.metric("Total", f"{len(drill_df):,}")
+            dc2.metric("Open/In Progress", f"{len(drill_df[drill_df['status'].isin(['Open', 'In Progress'])]):,}")
+            dc3.metric("Avg Resolution", f"{drill_df['resolution_hours'].mean():.0f} hrs")
+            dc4.metric("Avg Satisfaction", f"{drill_df['satisfaction_rating'].mean():.1f}/5")
+            
+            sev_drill = drill_df["severity"].value_counts()
+            fig_d = go.Figure(data=[go.Bar(
+                x=sev_drill.index, y=sev_drill.values,
+                marker_color=[SEVERITY_COLORS.get(k, COLORS["teal"]) for k in sev_drill.index],
+                text=sev_drill.values, textposition="outside", textfont=dict(color=CHART_TEXT_COLOR)
+            )])
+            fig_d.update_layout(**PLOT_LAYOUT, height=250, xaxis_title="Severity", yaxis_title="Count")
+            st.plotly_chart(fig_d, use_container_width=True)
+            
+            # Show recent complaints
+            show_cols = [c for c in ["complaint_id", "resident_id", "community", "severity", "status", "resolution_hours", "satisfaction_rating", "created_date"] if c in drill_df.columns]
+            st.dataframe(drill_df[show_cols].sort_values("created_date", ascending=False).head(20), use_container_width=True, hide_index=True)
     
     # ---- Row 2 ----
     col1, col2 = st.columns(2)
@@ -1385,9 +1483,45 @@ def page_sentiment_satisfaction(residents, interactions, complaints):
         textposition="outside",
         textfont=dict(color=CHART_TEXT_COLOR)
     ))
-    fig.update_layout(**PLOT_LAYOUT, height=450, xaxis_title="Satisfaction Score", yaxis_title="",
-                     xaxis_range=[0, 100])
+    fig.update_layout(**PLOT_LAYOUT, height=420, xaxis_title="Satisfaction Score (0-100)", yaxis_title="")
     st.plotly_chart(fig, use_container_width=True)
+    
+    # DRILL-DOWN: Community satisfaction deep-dive
+    comm_drill = st.selectbox("🔍 Drill into community sentiment", ["Select a community..."] + sorted(residents["community"].unique().tolist()), key="sent_comm_drill")
+    if comm_drill != "Select a community...":
+        comm_res = residents[residents["community"] == comm_drill]
+        comm_int = interactions[interactions["resident_id"].isin(comm_res["resident_id"])] if "resident_id" in interactions.columns else interactions
+        comm_comp = complaints[complaints["community"] == comm_drill] if "community" in complaints.columns else complaints
+        
+        with st.expander(f"🏘️ {comm_drill} — Sentiment Deep-Dive", expanded=True):
+            dc1, dc2, dc3, dc4 = st.columns(4)
+            dc1.metric("Residents", f"{len(comm_res):,}")
+            dc2.metric("Satisfaction", f"{comm_res['satisfaction_score'].mean():.1f}/100")
+            dc3.metric("Avg Sentiment", f"{comm_int['sentiment_score'].mean():.2f}" if len(comm_int) > 0 else "N/A")
+            dc4.metric("Open Complaints", f"{len(comm_comp[comm_comp['status'].isin(['Open', 'In Progress'])]):,}" if len(comm_comp) > 0 else "0")
+            
+            if len(comm_int) > 0:
+                dcol1, dcol2 = st.columns(2)
+                with dcol1:
+                    # Sentiment by purpose for this community
+                    purp_sent = comm_int.groupby("purpose")["sentiment_score"].mean().sort_values()
+                    fig_p = go.Figure(data=[go.Bar(
+                        y=purp_sent.index, x=purp_sent.values, orientation="h",
+                        marker_color=[COLORS["green"] if v > 0.2 else COLORS["yellow"] if v > 0 else COLORS["coral"] for v in purp_sent.values],
+                        text=[f"{v:.2f}" for v in purp_sent.values], textposition="outside", textfont=dict(color=CHART_TEXT_COLOR)
+                    )])
+                    fig_p.update_layout(**PLOT_LAYOUT, height=280, xaxis_title="Sentiment", title="Sentiment by Purpose")
+                    st.plotly_chart(fig_p, use_container_width=True)
+                with dcol2:
+                    # CSAT distribution for this community
+                    csat_d = comm_int["csat_score"].value_counts().sort_index()
+                    fig_c = go.Figure(data=[go.Bar(
+                        x=csat_d.index, y=csat_d.values,
+                        marker_color=[COLORS["red"], COLORS["coral"], COLORS["yellow"], COLORS["teal"], COLORS["green"]][:len(csat_d)],
+                        text=csat_d.values, textposition="outside", textfont=dict(color=CHART_TEXT_COLOR)
+                    )])
+                    fig_c.update_layout(**PLOT_LAYOUT, height=280, xaxis_title="CSAT Score", yaxis_title="Count", title="CSAT Distribution")
+                    st.plotly_chart(fig_c, use_container_width=True)
     
     # ---- Sentiment by Purpose ----
     section_header("Sentiment by Interaction Purpose", "🎯")
@@ -1540,6 +1674,36 @@ def page_lead_intelligence(leads):
         ))
         fig.update_layout(**PLOT_LAYOUT, height=420, xaxis_title="Active Leads", yaxis_title="")
         st.plotly_chart(fig, use_container_width=True)
+        
+        # DRILL-DOWN: Community pipeline detail
+        comm_pick = st.selectbox("🔍 Drill into community pipeline", ["Select a community..."] + sorted(leads["community_interest"].unique().tolist()), key="lead_comm_drill")
+        if comm_pick != "Select a community...":
+            comm_leads = leads[leads["community_interest"] == comm_pick]
+            active_cl = comm_leads[~comm_leads["stage"].isin(["Won", "Lost"])]
+            won_cl = comm_leads[comm_leads["stage"] == "Won"]
+            
+            with st.expander(f"🏘️ {comm_pick} — {len(comm_leads):,} leads ({len(active_cl):,} active)", expanded=True):
+                dc1, dc2, dc3, dc4 = st.columns(4)
+                dc1.metric("Total Leads", f"{len(comm_leads):,}")
+                dc2.metric("Won", f"{len(won_cl):,}")
+                dc3.metric("Conv Rate", f"{len(won_cl)/max(len(comm_leads),1)*100:.1f}%")
+                dc4.metric("Avg Score", f"{comm_leads['lead_score'].mean():.0f}")
+                
+                dcol1, dcol2 = st.columns(2)
+                with dcol1:
+                    stage_d = comm_leads["stage"].value_counts()
+                    fig_s = go.Figure(data=[go.Bar(x=stage_d.index, y=stage_d.values,
+                        marker_color=COLORS["gold"], text=stage_d.values,
+                        textposition="outside", textfont=dict(color=CHART_TEXT_COLOR))])
+                    fig_s.update_layout(**PLOT_LAYOUT, height=260, title="Stage Distribution")
+                    st.plotly_chart(fig_s, use_container_width=True)
+                with dcol2:
+                    src_d = comm_leads["source"].value_counts()
+                    fig_sr = go.Figure(data=[go.Bar(x=src_d.index, y=src_d.values,
+                        marker_color=COLORS["blue"], text=src_d.values,
+                        textposition="outside", textfont=dict(color=CHART_TEXT_COLOR))])
+                    fig_sr.update_layout(**PLOT_LAYOUT, height=260, title="Lead Sources")
+                    st.plotly_chart(fig_sr, use_container_width=True)
     
     with tab2:
         col1, col2 = st.columns(2)
