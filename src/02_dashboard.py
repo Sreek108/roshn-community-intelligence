@@ -910,8 +910,7 @@ def page_executive_summary(residents, payments, complaints, bookings, interactio
                     marker_color=[RISK_COLORS.get(k, COLORS["teal"]) for k in drill_risk.index],
                     text=drill_risk.values, textposition="outside", textfont=dict(color=CHART_TEXT_COLOR)
                 )])
-                fig_d.update_layout(**PLOT_LAYOUT, height=280, xaxis_title="", yaxis_title="Residents",
-                                   title=f"Risk Distribution — {selected_comm}")
+                fig_d.update_layout(**{**PLOT_LAYOUT, "title": f"Risk Distribution — {selected_comm}"}, height=280, xaxis_title="", yaxis_title="Residents")
                 st.plotly_chart(fig_d, use_container_width=True)
     
     with col2:
@@ -1510,7 +1509,7 @@ def page_sentiment_satisfaction(residents, interactions, complaints):
                         marker_color=[COLORS["green"] if v > 0.2 else COLORS["yellow"] if v > 0 else COLORS["coral"] for v in purp_sent.values],
                         text=[f"{v:.2f}" for v in purp_sent.values], textposition="outside", textfont=dict(color=CHART_TEXT_COLOR)
                     )])
-                    fig_p.update_layout(**PLOT_LAYOUT, height=280, xaxis_title="Sentiment", title="Sentiment by Purpose")
+                    fig_p.update_layout({**PLOT_LAYOUT, "title": "Sentiment by Purpose"}, height=280, xaxis_title="Sentiment")
                     st.plotly_chart(fig_p, use_container_width=True)
                 with dcol2:
                     # CSAT distribution for this community
@@ -1520,7 +1519,7 @@ def page_sentiment_satisfaction(residents, interactions, complaints):
                         marker_color=[COLORS["red"], COLORS["coral"], COLORS["yellow"], COLORS["teal"], COLORS["green"]][:len(csat_d)],
                         text=csat_d.values, textposition="outside", textfont=dict(color=CHART_TEXT_COLOR)
                     )])
-                    fig_c.update_layout(**PLOT_LAYOUT, height=280, xaxis_title="CSAT Score", yaxis_title="Count", title="CSAT Distribution")
+                    fig_c.update_layout({**PLOT_LAYOUT, "title": "CSAT Distribution"}, height=280, xaxis_title="CSAT Score", yaxis_title="Count")
                     st.plotly_chart(fig_c, use_container_width=True)
     
     # ---- Sentiment by Purpose ----
@@ -1695,14 +1694,14 @@ def page_lead_intelligence(leads):
                     fig_s = go.Figure(data=[go.Bar(x=stage_d.index, y=stage_d.values,
                         marker_color=COLORS["gold"], text=stage_d.values,
                         textposition="outside", textfont=dict(color=CHART_TEXT_COLOR))])
-                    fig_s.update_layout(**PLOT_LAYOUT, height=260, title="Stage Distribution")
+                    fig_s.update_layout({**PLOT_LAYOUT, "title": "Stage Distribution"}, height=260)
                     st.plotly_chart(fig_s, use_container_width=True)
                 with dcol2:
                     src_d = comm_leads["source"].value_counts()
                     fig_sr = go.Figure(data=[go.Bar(x=src_d.index, y=src_d.values,
                         marker_color=COLORS["blue"], text=src_d.values,
                         textposition="outside", textfont=dict(color=CHART_TEXT_COLOR))])
-                    fig_sr.update_layout(**PLOT_LAYOUT, height=260, title="Lead Sources")
+                    fig_sr.update_layout({**PLOT_LAYOUT, "title": "Lead Sources"}, height=260)
                     st.plotly_chart(fig_sr, use_container_width=True)
     
     with tab2:
