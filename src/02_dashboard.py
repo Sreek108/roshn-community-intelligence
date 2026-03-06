@@ -1982,8 +1982,8 @@ def page_demand_forecasting(bookings, complaints, interactions):
     st.markdown("""
     <div style="padding: 4px 0 12px 0;">
         <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Operations Planning</div>
-        <h1 style="font-size: 28px; margin-top: 8px;">Demand Forecasting & Resource Optimization</h1>
-        <p style="color: var(--text-muted);">Facility demand patterns, maintenance prediction, and resource planning</p>
+        <h1 style="font-size: 28px; margin-top: 8px;">Community Amenity Demand & Resource Planning</h1>
+        <p style="color: var(--text-muted);">Facility booking patterns by community, peak usage analysis, and resource optimization</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -1992,8 +1992,10 @@ def page_demand_forecasting(bookings, complaints, interactions):
     completed = len(bookings[bookings["status"] == "Completed"])
     no_show_rate = len(bookings[bookings["status"] == "No-Show"]) / total_bookings * 100
     top_facility = bookings["facility"].value_counts().index[0]
+    unique_facilities = bookings["facility"].nunique()
+    avg_daily = total_bookings / max(bookings["booking_date"].dt.date.nunique(), 1)
     
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
     with c1:
         st.markdown(kpi_card("Total Bookings", f"{total_bookings:,}", "", "up", COLORS["teal"]), unsafe_allow_html=True)
     with c2:
@@ -2002,104 +2004,236 @@ def page_demand_forecasting(bookings, complaints, interactions):
         st.markdown(kpi_card("No-Show Rate", f"{no_show_rate:.1f}%", "", "down", COLORS["coral"]), unsafe_allow_html=True)
     with c4:
         st.markdown(kpi_card("Top Facility", top_facility, "", "up", COLORS["blue"]), unsafe_allow_html=True)
+    with c5:
+        st.markdown(kpi_card("Unique Amenities", f"{unique_facilities}", "", "up", COLORS["gold"]), unsafe_allow_html=True)
+    with c6:
+        st.markdown(kpi_card("Avg Daily Bookings", f"{avg_daily:.0f}", "", "up", COLORS["purple"]), unsafe_allow_html=True)
     
     st.markdown('<div style="margin:8px 0"></div>', unsafe_allow_html=True)
     
-    # ---- Facility Usage Patterns ----
-    col1, col2 = st.columns(2)
+    # ---- TABS ----
+    tab1, tab2, tab3, tab4 = st.tabs(["🏘️ Community Demand", "🏋️ Facility Rankings", "⏰ Peak Patterns", "🔧 Maintenance Forecast"])
     
-    with col1:
-        section_header("Facility Demand Ranking", "🏋️")
-        fac_counts = bookings["facility"].value_counts().head(12)
-        fig = go.Figure(data=[go.Bar(
-            y=fac_counts.index[::-1], x=fac_counts.values[::-1],
-            orientation="h",
-            marker_color=COLORS["teal"],
-            text=fac_counts.values[::-1],
-            textposition="outside",
-            textfont=dict(color=CHART_TEXT_COLOR)
-        )])
-        fig.update_layout(**PLOT_LAYOUT, height=450, xaxis_title="Bookings", yaxis_title="")
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        section_header("Booking by Day of Week", "📅")
-        day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        day_counts = bookings["day_of_week"].value_counts().reindex(day_order)
+    # ---- TAB 1: Community-Level Demand ----
+    with tab1:
+        section_header("Bookings by Community", "🏘️")
+        
+        comm_demand = bookings.groupby("community").agg(
+            bookings=("booking_id", "count") if "booking_id" in bookings.columns else ("facility", "count"),
+            unique_facilities=("facility", "nunique"),
+            completion_rate=("status", lambda x: (x == "Completed").mean() * 100),
+            no_show_rate=("status", lambda x: (x == "No-Show").mean() * 100),
+        ).reset_index().sort_values("bookings", ascending=True)
         
         fig = go.Figure(data=[go.Bar(
-            x=day_counts.index, y=day_counts.values,
-            marker_color=[COLORS["teal"] if d in ["Friday", "Saturday"] else COLORS["navy"] for d in day_counts.index],
-            text=day_counts.values,
+            y=comm_demand["community"], x=comm_demand["bookings"],
+            orientation="h",
+            marker_color=COLORS["teal"],
+            text=comm_demand["bookings"].astype(int),
             textposition="outside",
             textfont=dict(color=CHART_TEXT_COLOR)
         )])
-        fig.update_layout(**PLOT_LAYOUT, height=450, xaxis_title="", yaxis_title="Bookings")
+        fig.update_layout(**PLOT_LAYOUT, height=420, xaxis_title="Total Bookings", yaxis_title="")
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # DRILL-DOWN: Community amenity breakdown
+        comm_pick = st.selectbox("🔍 Drill into community", ["Select a community..."] + sorted(bookings["community"].unique().tolist()), key="demand_comm_drill")
+        if comm_pick != "Select a community...":
+            comm_bk = bookings[bookings["community"] == comm_pick]
+            
+            with st.expander(f"🏘️ {comm_pick} — {len(comm_bk):,} bookings", expanded=True):
+                dc1, dc2, dc3, dc4 = st.columns(4)
+                dc1.metric("Total Bookings", f"{len(comm_bk):,}")
+                dc2.metric("Completion", f"{(comm_bk['status']=='Completed').mean()*100:.1f}%")
+                dc3.metric("No-Show", f"{(comm_bk['status']=='No-Show').mean()*100:.1f}%")
+                dc4.metric("Amenities Used", f"{comm_bk['facility'].nunique()}")
+                
+                dcol1, dcol2 = st.columns(2)
+                with dcol1:
+                    fac_d = comm_bk["facility"].value_counts().head(10)
+                    fig_f = go.Figure(data=[go.Bar(
+                        y=fac_d.index[::-1], x=fac_d.values[::-1], orientation="h",
+                        marker_color=COLORS["teal"], text=fac_d.values[::-1],
+                        textposition="outside", textfont=dict(color=CHART_TEXT_COLOR)
+                    )])
+                    fig_f.update_layout(**{**PLOT_LAYOUT, "title": f"Top Amenities — {comm_pick}"}, height=320, xaxis_title="Bookings")
+                    st.plotly_chart(fig_f, use_container_width=True)
+                with dcol2:
+                    day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                    day_d = comm_bk["day_of_week"].value_counts().reindex(day_order).fillna(0)
+                    fig_dy = go.Figure(data=[go.Bar(
+                        x=day_d.index, y=day_d.values,
+                        marker_color=[COLORS["gold"] if d in ["Friday", "Saturday"] else COLORS["teal"] for d in day_d.index],
+                        text=day_d.values.astype(int), textposition="outside", textfont=dict(color=CHART_TEXT_COLOR)
+                    )])
+                    fig_dy.update_layout(**{**PLOT_LAYOUT, "title": f"Day-of-Week — {comm_pick}"}, height=320, yaxis_title="Bookings")
+                    st.plotly_chart(fig_dy, use_container_width=True)
+        
+        # Community × Facility Heatmap
+        section_header("Community × Facility Demand Heatmap", "🔥")
+        comm_fac = bookings.groupby(["community", "facility"]).size().reset_index(name="count")
+        comm_fac_pivot = comm_fac.pivot(index="community", columns="facility", values="count").fillna(0)
+        
+        fig = go.Figure(data=go.Heatmap(
+            z=comm_fac_pivot.values,
+            x=comm_fac_pivot.columns,
+            y=comm_fac_pivot.index,
+            colorscale=[[0, "#FAF8F5"], [0.25, "#E8E0D4"], [0.5, "#B8860B"], [0.75, "#C96B30"], [1, "#C4515A"]],
+            text=comm_fac_pivot.values.astype(int),
+            texttemplate="%{text}",
+            textfont=dict(size=9, color=CHART_TEXT_COLOR),
+            colorbar=dict(title=dict(text="Bookings", font=dict(color=CHART_MUTED_COLOR)), tickfont=dict(color=CHART_MUTED_COLOR))
+        ))
+        fig.update_layout(**PLOT_LAYOUT, height=450, xaxis_title="", yaxis_title="")
+        fig.update_xaxes(tickangle=-45)
         st.plotly_chart(fig, use_container_width=True)
     
-    # ---- Hourly Demand Pattern ----
-    section_header("Hourly Demand Pattern", "⏰")
+    # ---- TAB 2: Facility Rankings ----
+    with tab2:
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            section_header("Facility Demand Ranking", "🏋️")
+            fac_counts = bookings["facility"].value_counts().head(12)
+            fig = go.Figure(data=[go.Bar(
+                y=fac_counts.index[::-1], x=fac_counts.values[::-1],
+                orientation="h",
+                marker_color=COLORS["teal"],
+                text=fac_counts.values[::-1],
+                textposition="outside",
+                textfont=dict(color=CHART_TEXT_COLOR)
+            )])
+            fig.update_layout(**PLOT_LAYOUT, height=450, xaxis_title="Bookings", yaxis_title="")
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            section_header("Facility Completion vs No-Show", "📊")
+            fac_status = bookings.groupby("facility")["status"].value_counts(normalize=True).unstack(fill_value=0) * 100
+            fac_status = fac_status.sort_values("Completed" if "Completed" in fac_status.columns else fac_status.columns[0], ascending=True).tail(12)
+            
+            fig = go.Figure()
+            for status_col, color in [("Completed", COLORS["green"]), ("No-Show", COLORS["coral"]), ("Cancelled", COLORS["yellow"])]:
+                if status_col in fac_status.columns:
+                    fig.add_trace(go.Bar(
+                        y=fac_status.index, x=fac_status[status_col],
+                        name=status_col, orientation="h", marker_color=color
+                    ))
+            fig.update_layout(**PLOT_LAYOUT, height=450, barmode="stack", xaxis_title="% of Bookings", yaxis_title="",
+                            legend=dict(x=0, y=1.1, orientation="h", bgcolor="rgba(0,0,0,0)", font=dict(color=CHART_MUTED_COLOR)))
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # Facility drill-down
+        fac_pick = st.selectbox("🔍 Drill into facility", ["Select a facility..."] + sorted(bookings["facility"].unique().tolist()), key="demand_fac_drill")
+        if fac_pick != "Select a facility...":
+            fac_bk = bookings[bookings["facility"] == fac_pick]
+            with st.expander(f"🏋️ {fac_pick} — {len(fac_bk):,} bookings", expanded=True):
+                dc1, dc2, dc3, dc4 = st.columns(4)
+                dc1.metric("Total", f"{len(fac_bk):,}")
+                dc2.metric("Completion", f"{(fac_bk['status']=='Completed').mean()*100:.1f}%")
+                dc3.metric("No-Show", f"{(fac_bk['status']=='No-Show').mean()*100:.1f}%")
+                dc4.metric("Communities", f"{fac_bk['community'].nunique()}")
+                
+                # Which communities use this facility most
+                comm_usage = fac_bk["community"].value_counts()
+                fig_cu = go.Figure(data=[go.Bar(
+                    x=comm_usage.index, y=comm_usage.values,
+                    marker_color=COLORS["gold"], text=comm_usage.values,
+                    textposition="outside", textfont=dict(color=CHART_TEXT_COLOR)
+                )])
+                fig_cu.update_layout(**{**PLOT_LAYOUT, "title": f"{fac_pick} — Usage by Community"}, height=280, yaxis_title="Bookings")
+                fig_cu.update_xaxes(tickangle=-45)
+                st.plotly_chart(fig_cu, use_container_width=True)
     
-    bookings["hour"] = bookings["time_slot"].str[:2].astype(int)
-    hourly = bookings.groupby("hour").size().reset_index(name="count")
+    # ---- TAB 3: Peak Patterns ----
+    with tab3:
+        col1, col2 = st.columns(2)
+        with col1:
+            section_header("Booking by Day of Week", "📅")
+            day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            day_counts = bookings["day_of_week"].value_counts().reindex(day_order)
+            
+            fig = go.Figure(data=[go.Bar(
+                x=day_counts.index, y=day_counts.values,
+                marker_color=[COLORS["gold"] if d in ["Friday", "Saturday"] else COLORS["teal"] for d in day_counts.index],
+                text=day_counts.values,
+                textposition="outside",
+                textfont=dict(color=CHART_TEXT_COLOR)
+            )])
+            fig.update_layout(**PLOT_LAYOUT, height=400, xaxis_title="", yaxis_title="Bookings")
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            section_header("Hourly Demand Pattern", "⏰")
+            bookings["hour"] = bookings["time_slot"].str[:2].astype(int)
+            hourly = bookings.groupby("hour").size().reset_index(name="count")
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=hourly["hour"], y=hourly["count"],
+                mode="lines+markers+text",
+                line=dict(color=COLORS["teal"], width=3, shape="spline"),
+                marker=dict(size=10, color=COLORS["teal"]),
+                fill="tozeroy",
+                fillcolor="rgba(61, 139, 94, 0.12)",
+                text=hourly["count"],
+                textposition="top center",
+                textfont=dict(color=CHART_TEXT_COLOR, size=10)
+            ))
+            fig.update_layout(**{**PLOT_LAYOUT, "xaxis": dict(dtick=1, **{k: v for k, v in PLOT_LAYOUT.get("xaxis", {}).items() if k in ["gridcolor", "zerolinecolor", "linecolor"]})}, height=400,
+                             xaxis_title="Hour of Day", yaxis_title="Bookings")
+            peak_hour = hourly.loc[hourly["count"].idxmax(), "hour"]
+            fig.add_annotation(x=peak_hour, y=hourly["count"].max(),
+                              text="PEAK", showarrow=True, arrowhead=2,
+                              font=dict(color=COLORS["coral"], size=14, family="Lato"),
+                              arrowcolor=COLORS["coral"])
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # Day × Hour heatmap
+        section_header("Usage Heatmap: Day × Hour", "🔥")
+        day_order_h = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        usage_heatmap = bookings.groupby(["day_of_week", "hour"]).size().reset_index(name="count")
+        usage_pivot = usage_heatmap.pivot(index="day_of_week", columns="hour", values="count").fillna(0)
+        usage_pivot = usage_pivot.reindex(day_order_h)
+        
+        fig = go.Figure(data=go.Heatmap(
+            z=usage_pivot.values,
+            x=[f"{h}:00" for h in usage_pivot.columns],
+            y=usage_pivot.index,
+            colorscale=[[0, "#FAF8F5"], [0.3, "#E8E0D4"], [0.6, "#B8860B"], [0.8, "#C96B30"], [1, "#C4515A"]],
+            colorbar=dict(title=dict(text="Bookings", font=dict(color=CHART_MUTED_COLOR)), tickfont=dict(color=CHART_MUTED_COLOR))
+        ))
+        fig.update_layout(**PLOT_LAYOUT, height=350, xaxis_title="Hour", yaxis_title="")
+        st.plotly_chart(fig, use_container_width=True)
     
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=hourly["hour"], y=hourly["count"],
-        mode="lines+markers+text",
-        line=dict(color=COLORS["teal"], width=3, shape="spline"),
-        marker=dict(size=10, color=COLORS["teal"]),
-        fill="tozeroy",
-        fillcolor="rgba(61, 139, 94, 0.12)",
-        text=hourly["count"],
-        textposition="top center",
-        textfont=dict(color=CHART_TEXT_COLOR, size=10)
-    ))
-    fig.update_layout(**{**PLOT_LAYOUT, "xaxis": dict(dtick=1, **{k: v for k, v in PLOT_LAYOUT.get("xaxis", {}).items() if k in ["gridcolor", "zerolinecolor", "linecolor"]})}, height=350,
-                     xaxis_title="Hour of Day", yaxis_title="Bookings")
-    
-    # Peak hours annotation
-    peak_hour = hourly.loc[hourly["count"].idxmax(), "hour"]
-    fig.add_annotation(x=peak_hour, y=hourly["count"].max(),
-                      text="PEAK", showarrow=True, arrowhead=2,
-                      font=dict(color=COLORS["coral"], size=14, family="Lato"),
-                      arrowcolor=COLORS["coral"])
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # ---- Heatmap: Facility × Day ----
-    section_header("Facility Usage Heatmap: Day × Hour", "🔥")
-    
-    usage_heatmap = bookings.groupby(["day_of_week", "hour"]).size().reset_index(name="count")
-    usage_pivot = usage_heatmap.pivot(index="day_of_week", columns="hour", values="count").fillna(0)
-    usage_pivot = usage_pivot.reindex(day_order)
-    
-    fig = go.Figure(data=go.Heatmap(
-        z=usage_pivot.values,
-        x=[f"{h}:00" for h in usage_pivot.columns],
-        y=usage_pivot.index,
-        colorscale=[[0, "#FAF8F5"], [0.3, "#E8E0D4"], [0.6, "#B8860B"], [0.8, "#D47643"], [1, "#C1666B"]],
-        colorbar=dict(title=dict(text="Bookings", font=dict(color=CHART_MUTED_COLOR)), tickfont=dict(color=CHART_MUTED_COLOR))
-    ))
-    fig.update_layout(**PLOT_LAYOUT, height=350, xaxis_title="Hour", yaxis_title="")
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # ---- Maintenance Demand Forecast ----
-    section_header("Maintenance Request Volume Trend", "🔧")
-    
-    complaints["month"] = complaints["created_date"].dt.to_period("M").astype(str)
-    maint_categories = ["Plumbing/Water Leakage", "Electrical Issues", "HVAC/Air Conditioning",
-                       "Appliance Repair", "Paint/Finishing", "Door/Window Issues"]
-    maint = complaints[complaints["category"].isin(maint_categories)]
-    maint_monthly = maint.groupby(["month", "category"]).size().reset_index(name="count")
-    maint_monthly = maint_monthly[maint_monthly["month"] >= "2024-01"]
-    
-    fig = px.line(maint_monthly, x="month", y="count", color="category", markers=True,
-                 color_discrete_sequence=[COLORS["teal"], COLORS["coral"], COLORS["yellow"],
-                                        COLORS["blue"], COLORS["purple"], COLORS["green"]])
-    fig.update_layout(**PLOT_LAYOUT, height=400, xaxis_title="", yaxis_title="Requests",
-                     legend_title_text="Category")
-    fig.update_xaxes(tickangle=-45)
-    st.plotly_chart(fig, use_container_width=True)
+    # ---- TAB 4: Maintenance Forecast ----
+    with tab4:
+        section_header("Maintenance Request Volume Trend", "🔧")
+        
+        complaints["month"] = complaints["created_date"].dt.to_period("M").astype(str)
+        maint_categories = ["Plumbing/Water Leakage", "Electrical Issues", "HVAC/Air Conditioning",
+                           "Appliance Repair", "Paint/Finishing", "Door/Window Issues"]
+        maint = complaints[complaints["category"].isin(maint_categories)]
+        maint_monthly = maint.groupby(["month", "category"]).size().reset_index(name="count")
+        maint_monthly = maint_monthly[maint_monthly["month"] >= "2024-01"]
+        
+        fig = px.line(maint_monthly, x="month", y="count", color="category", markers=True,
+                     color_discrete_sequence=[COLORS["teal"], COLORS["coral"], COLORS["yellow"],
+                                            COLORS["blue"], COLORS["purple"], COLORS["green"]])
+        fig.update_layout(**PLOT_LAYOUT, height=400, xaxis_title="", yaxis_title="Requests",
+                         legend_title_text="Category")
+        fig.update_xaxes(tickangle=-45)
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Maintenance by community
+        section_header("Maintenance Demand by Community", "🏘️")
+        maint_comm = maint.groupby("community").size().reset_index(name="count").sort_values("count", ascending=True)
+        fig = go.Figure(data=[go.Bar(
+            y=maint_comm["community"], x=maint_comm["count"], orientation="h",
+            marker_color=COLORS["coral"], text=maint_comm["count"],
+            textposition="outside", textfont=dict(color=CHART_TEXT_COLOR)
+        )])
+        fig.update_layout(**PLOT_LAYOUT, height=400, xaxis_title="Maintenance Requests", yaxis_title="")
+        st.plotly_chart(fig, use_container_width=True)
 
 
 # ============================================================================
