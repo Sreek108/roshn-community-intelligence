@@ -2118,8 +2118,7 @@ def page_demand_forecasting(bookings, complaints, interactions):
                         y=fac_status.index, x=fac_status[status_col],
                         name=status_col, orientation="h", marker_color=color
                     ))
-            fig.update_layout(**PLOT_LAYOUT, height=450, barmode="stack", xaxis_title="% of Bookings", yaxis_title="",
-                            legend=dict(x=0, y=1.1, orientation="h", bgcolor="rgba(0,0,0,0)", font=dict(color=CHART_MUTED_COLOR)))
+            fig.update_layout(**{**PLOT_LAYOUT, "legend": dict(x=0, y=1.1, orientation="h", bgcolor="rgba(0,0,0,0)", font=dict(color=CHART_MUTED_COLOR))}, height=450, barmode="stack", xaxis_title="% of Bookings", yaxis_title="")
             st.plotly_chart(fig, use_container_width=True)
         
         # Facility drill-down
