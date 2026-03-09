@@ -251,6 +251,78 @@ st.markdown("""
     .risk-low { background: #3D8B5E22; color: #3D8B5E; border: 1px solid #3D8B5E44; }
     .risk-verylow { background: #2E7D4622; color: #2E7D46; border: 1px solid #2E7D4644; }
 
+    /* ---- AI Insight Panel ---- */
+    .ai-insight-panel {
+        background: linear-gradient(135deg, #FFFDF5 0%, #FFF8E7 100%);
+        border: 1.5px solid #D4B06A;
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin: 16px 0 24px 0;
+        box-shadow: 0 4px 16px rgba(184, 134, 11, 0.08);
+    }
+    .ai-insight-panel .ai-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+    .ai-insight-panel .ai-header .ai-icon {
+        background: linear-gradient(135deg, #B8860B, #D4A017);
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 700;
+    }
+    .ai-insight-panel .ai-header .ai-title {
+        font-family: 'Lato', sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        color: #B8860B;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+    }
+    .ai-insight-panel .ai-body {
+        font-family: 'Lato', sans-serif;
+        font-size: 13.5px;
+        color: #3D3D3D;
+        line-height: 1.75;
+    }
+    .ai-insight-panel .ai-action {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 8px 0 4px 0;
+    }
+    .ai-insight-panel .ai-action .action-icon {
+        color: #B8860B;
+        font-size: 14px;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+    .ai-insight-panel .ai-action .action-text {
+        font-size: 13px;
+        color: #4A4A4A;
+    }
+    .ai-insight-panel .ai-priority {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-right: 6px;
+    }
+    .priority-critical { background: #C4515A22; color: #C4515A; border: 1px solid #C4515A44; }
+    .priority-high { background: #C96B3022; color: #C96B30; border: 1px solid #C96B3044; }
+    .priority-medium { background: #C9920A22; color: #C9920A; border: 1px solid #C9920A44; }
+    .priority-low { background: #2E7D4622; color: #2E7D46; border: 1px solid #2E7D4644; }
+
     /* ---- Tabs ---- */
     .stTabs [data-baseweb="tab-list"] {
         gap: 4px;
@@ -737,6 +809,279 @@ def section_header(title, icon=""):
     </div>
     """, unsafe_allow_html=True)
 
+def render_ai_insights(actions):
+    """Render an AI insight panel with prioritized next-best-actions.
+    actions: list of dicts with keys: priority (critical/high/medium/low), text
+    """
+    actions_html = ""
+    for a in actions:
+        pri = a.get("priority", "medium")
+        pri_label = pri.upper()
+        pri_class = f"priority-{pri}"
+        actions_html += f"""
+        <div class="ai-action">
+            <span class="action-icon">▸</span>
+            <span class="action-text"><span class="ai-priority {pri_class}">{pri_label}</span> {a['text']}</span>
+        </div>"""
+    
+    st.markdown(f"""
+    <div class="ai-insight-panel">
+        <div class="ai-header">
+            <div class="ai-icon">AI</div>
+            <div class="ai-title">Next Best Actions — AI Recommendations</div>
+        </div>
+        <div class="ai-body">{actions_html}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ============================================================================
+# AI INSIGHT ENGINES — Data-driven recommendation generators
+# ============================================================================
+def insights_overview(residents, payments, complaints, interactions):
+    """Generate AI insights for the Executive Summary page."""
+    actions = []
+    default_rate = residents["default_flag"].mean() * 100
+    if default_rate > 15:
+        actions.append({"priority": "critical", "text": f"Default rate is {default_rate:.1f}% — well above the 10% industry benchmark. Launch an immediate collections task force targeting the {len(residents[residents['risk_category'].isin(['High', 'Critical'])]):,} high-risk residents before Q2 close."})
+    elif default_rate > 8:
+        actions.append({"priority": "high", "text": f"Default rate at {default_rate:.1f}% is trending above target. Prioritize proactive payment plan outreach to residents with DPD between 15-45 days to prevent escalation."})
+    
+    active_complaints = len(complaints[complaints["status"].isin(["Open", "In Progress"])])
+    complaint_ratio = active_complaints / max(len(residents), 1) * 100
+    if complaint_ratio > 30:
+        actions.append({"priority": "high", "text": f"{active_complaints:,} active complaints ({complaint_ratio:.0f}% of residents). The top 3 complaint categories should be triaged this week — assign dedicated resolution teams to reduce backlog by 50%."})
+    
+    ai_rate = interactions["resolved_by_ai"].mean() * 100
+    if ai_rate < 75:
+        actions.append({"priority": "medium", "text": f"AI resolution rate is {ai_rate:.1f}%. Analyze the {interactions['escalated_to_human'].sum():,} escalated cases to identify training gaps — improving AI handling of the top 2 escalation reasons could push resolution above 80%."})
+    
+    # Community-specific insight
+    comm_risk = residents.groupby("community")["default_flag"].mean()
+    worst_comm = comm_risk.idxmax()
+    worst_rate = comm_risk.max() * 100
+    if worst_rate > default_rate * 1.3:
+        actions.append({"priority": "high", "text": f"{worst_comm} has a {worst_rate:.1f}% default rate — {worst_rate - default_rate:.1f}pp above portfolio average. Deploy a dedicated community manager with payment support resources."})
+    
+    # Satisfaction insight
+    avg_sat = residents["satisfaction_score"].mean()
+    if avg_sat < 70:
+        actions.append({"priority": "medium", "text": f"Overall satisfaction is {avg_sat:.1f}/100. Focus service recovery on the bottom 3 communities and implement a 48-hour complaint resolution SLA to drive scores above 75."})
+    
+    return actions
+
+
+def insights_payment_risk(residents, payments):
+    """Generate AI insights for the Payment Risk page."""
+    actions = []
+    
+    # High-risk concentration
+    high_risk = residents[residents["risk_category"].isin(["High", "Critical"])]
+    if len(high_risk) > 0:
+        hr_balance = high_risk["outstanding_balance_aed"].sum()
+        hr_str = f"{hr_balance/1e9:.1f}B" if hr_balance >= 1e9 else f"{hr_balance/1e6:.0f}M"
+        actions.append({"priority": "critical", "text": f"{len(high_risk):,} residents at high/critical risk with {hr_str} SAR outstanding. Start with the top 25 by risk score — personal outreach within 48 hours with tailored payment restructuring options."})
+    
+    # DPD threshold crossers
+    dpd_30_60 = residents[(residents["current_dpd"] >= 30) & (residents["current_dpd"] < 60)]
+    if len(dpd_30_60) > 50:
+        actions.append({"priority": "high", "text": f"{len(dpd_30_60):,} residents are in the 30-60 DPD danger zone — the critical intervention window. Automated SMS + email payment reminders should be triggered immediately, followed by agent calls for accounts over 500K SAR."})
+    
+    # Zone with worst performance
+    zone_default = residents.groupby("zone")["default_flag"].mean()
+    worst_zone = zone_default.idxmax()
+    worst_z_rate = zone_default.max() * 100
+    avg_rate = residents["default_flag"].mean() * 100
+    if worst_z_rate > avg_rate * 1.2:
+        actions.append({"priority": "medium", "text": f"{worst_zone} has {worst_z_rate:.1f}% default rate vs {avg_rate:.1f}% portfolio average. Investigate zone-specific factors (maintenance issues, community management quality) that may be driving dissatisfaction and defaults."})
+    
+    # Credit score deterioration signal
+    low_credit = residents[residents["credit_score"] < 500]
+    if len(low_credit) > 100:
+        actions.append({"priority": "medium", "text": f"{len(low_credit):,} residents have credit scores below 500. Cross-reference with complaint history — residents with both low credit and high complaints are prime candidates for retention-risk intervention."})
+    
+    return actions
+
+
+def insights_complaints(complaints):
+    """Generate AI insights for the Complaints page."""
+    actions = []
+    
+    open_complaints = complaints[complaints["status"].isin(["Open", "In Progress"])]
+    
+    # Oldest unresolved
+    if len(open_complaints) > 0:
+        top_cat = open_complaints["category"].value_counts()
+        if len(top_cat) > 0:
+            top_name = top_cat.index[0]
+            top_count = top_cat.values[0]
+            actions.append({"priority": "high", "text": f"'{top_name}' has {top_count:,} open complaints — the highest backlog. Assign a dedicated team of 3 agents to clear this category within 2 weeks using batch resolution templates."})
+    
+    # Escalation patterns
+    escalated = complaints[complaints["status"] == "Escalated"]
+    if len(escalated) > len(complaints) * 0.04:
+        esc_pct = len(escalated) / len(complaints) * 100
+        actions.append({"priority": "critical", "text": f"Escalation rate is {esc_pct:.1f}% — target should be below 3%. Review the escalation criteria and empower front-line agents with higher resolution authority to reduce unnecessary escalations."})
+    
+    # Resolution time outliers
+    avg_resolution = complaints["resolution_hours"].mean()
+    if avg_resolution > 72:
+        slow_cats = complaints.groupby("category")["resolution_hours"].mean().sort_values(ascending=False).head(3)
+        slow_names = ", ".join(slow_cats.index.tolist())
+        actions.append({"priority": "medium", "text": f"Average resolution is {avg_resolution:.0f} hours (target: <48). Slowest categories: {slow_names}. Create SOP fast-track workflows for these categories to cut resolution time by 40%."})
+    
+    # Zone with most critical complaints
+    if "severity" in complaints.columns:
+        critical_by_zone = complaints[complaints["severity"] == "Critical"].groupby("zone").size()
+        if len(critical_by_zone) > 0:
+            worst_zone = critical_by_zone.idxmax()
+            worst_count = critical_by_zone.max()
+            actions.append({"priority": "high", "text": f"{worst_zone} has {worst_count:,} critical complaints. Schedule an emergency review with the zone's facilities team and create a 7-day action plan for the top 5 issues."})
+    
+    return actions
+
+
+def insights_sentiment(residents, interactions):
+    """Generate AI insights for the Sentiment page."""
+    actions = []
+    
+    avg_sentiment = interactions["sentiment_score"].mean()
+    negative_pct = (interactions["sentiment_score"] < -0.2).mean() * 100
+    
+    if negative_pct > 25:
+        actions.append({"priority": "critical", "text": f"{negative_pct:.0f}% of interactions have negative sentiment. Launch a Voice of Customer program — extract the top 5 negative themes from recent interactions and create targeted improvement plans for each."})
+    
+    # Channel gap
+    channel_sent = interactions.groupby("channel")["sentiment_score"].mean()
+    best_ch = channel_sent.idxmax()
+    worst_ch = channel_sent.idxmin()
+    gap = channel_sent.max() - channel_sent.min()
+    if gap > 0.15:
+        actions.append({"priority": "high", "text": f"'{worst_ch}' channel sentiment ({channel_sent.min():.2f}) is significantly lower than '{best_ch}' ({channel_sent.max():.2f}). Audit the {worst_ch} experience — likely issues: long wait times, unhelpful scripts, or poor agent training."})
+    
+    # Low-satisfaction communities
+    comm_sat = residents.groupby("community")["satisfaction_score"].mean()
+    low_comms = comm_sat[comm_sat < 65]
+    if len(low_comms) > 0:
+        comm_names = ", ".join(low_comms.index.tolist())
+        actions.append({"priority": "high", "text": f"Communities below 65 satisfaction: {comm_names}. Assign community experience managers and run resident town halls within 30 days to identify and address specific pain points."})
+    
+    # CSAT trend
+    avg_csat = interactions["csat_score"].mean()
+    low_csat_pct = (interactions["csat_score"] <= 2).mean() * 100
+    if low_csat_pct > 15:
+        actions.append({"priority": "medium", "text": f"{low_csat_pct:.0f}% of interactions received CSAT 1-2 (very dissatisfied). Implement a real-time CSAT alert system — any score of 1 should trigger an automatic callback from a senior agent within 4 hours."})
+    
+    return actions
+
+
+def insights_leads(leads):
+    """Generate AI insights for the Lead Intelligence page."""
+    actions = []
+    
+    if leads.empty:
+        return actions
+    
+    active = leads[~leads["stage"].isin(["Won", "Lost"])]
+    conv_rate = (leads["stage"] == "Won").mean() * 100
+    
+    # Stale leads
+    if "days_since_activity" in leads.columns:
+        stale = active[active["days_since_activity"] > 30]
+        if len(stale) > 100:
+            actions.append({"priority": "high", "text": f"{len(stale):,} active leads have been inactive for 30+ days. Launch a re-engagement campaign: personalized email + WhatsApp message with a new property recommendation based on their original interest."})
+    
+    # Response time
+    avg_resp = leads["response_time_hours"].mean()
+    if avg_resp > 8:
+        actions.append({"priority": "critical", "text": f"Average lead response time is {avg_resp:.1f} hours — industry best practice is under 2 hours. Implement an auto-assignment rule: new leads must receive first contact within 1 hour during business hours."})
+    elif avg_resp > 4:
+        actions.append({"priority": "high", "text": f"Average response time is {avg_resp:.1f} hours. Leads contacted within 2 hours convert at 3x the rate. Set up automated instant-response messages while agents prepare personalized follow-ups."})
+    
+    # Source optimization
+    source_conv = leads.groupby("source").agg(
+        total=("lead_id", "count"),
+        won=("stage", lambda x: (x == "Won").sum()),
+    ).reset_index()
+    source_conv["rate"] = source_conv["won"] / source_conv["total"] * 100
+    best_source = source_conv.loc[source_conv["rate"].idxmax()]
+    worst_source = source_conv.loc[source_conv["rate"].idxmin()]
+    if best_source["rate"] > worst_source["rate"] * 2:
+        actions.append({"priority": "medium", "text": f"'{best_source['source']}' converts at {best_source['rate']:.1f}% while '{worst_source['source']}' converts at only {worst_source['rate']:.1f}%. Shift 20% of marketing budget from {worst_source['source']} to {best_source['source']} for immediate ROI improvement."})
+    
+    # Hot leads action
+    if "lead_priority" in leads.columns:
+        hot = active[active["lead_priority"] == "Hot"]
+        unscheduled = hot[hot.get("follow_up_scheduled", pd.Series(False, index=hot.index)) == False] if "follow_up_scheduled" in hot.columns else hot
+        if len(unscheduled) > 10:
+            actions.append({"priority": "critical", "text": f"{len(unscheduled):,} hot leads (>75% conversion probability) don't have follow-ups scheduled. These are your highest-value opportunities — assign to top agents and schedule calls within 24 hours."})
+    
+    return actions
+
+
+def insights_demand(bookings, complaints):
+    """Generate AI insights for the Demand page."""
+    actions = []
+    
+    no_show_rate = (bookings["status"] == "No-Show").mean() * 100
+    if no_show_rate > 10:
+        actions.append({"priority": "high", "text": f"No-show rate is {no_show_rate:.1f}%. Implement a 24-hour booking reminder (SMS + push notification) and a 3-strike policy — residents with 3+ no-shows get deprioritized in booking queues."})
+    
+    # Overbooked facilities
+    fac_counts = bookings["facility"].value_counts()
+    top_fac = fac_counts.index[0]
+    top_count = fac_counts.values[0]
+    bottom_fac = fac_counts.index[-1]
+    bottom_count = fac_counts.values[-1]
+    if top_count > bottom_count * 3:
+        actions.append({"priority": "medium", "text": f"'{top_fac}' ({top_count:,} bookings) is 3x+ more popular than '{bottom_fac}' ({bottom_count:,}). Consider adding capacity for {top_fac} and running promotional campaigns to drive traffic to underutilized amenities."})
+    
+    # Weekend demand
+    weekend = bookings[bookings["day_of_week"].isin(["Friday", "Saturday"])]
+    weekday = bookings[~bookings["day_of_week"].isin(["Friday", "Saturday"])]
+    if len(weekend) / 2 > len(weekday) / 5 * 1.5:
+        actions.append({"priority": "medium", "text": "Weekend demand is 50%+ higher per day than weekdays. Staff amenity areas with 2x personnel on Friday-Saturday and consider extended hours for top facilities."})
+    
+    # Maintenance-related
+    maint_cats = ["Plumbing/Water Leakage", "Electrical Issues", "HVAC/Air Conditioning"]
+    maint = complaints[complaints["category"].isin(maint_cats)]
+    if len(maint) > 0:
+        maint_comm = maint.groupby("community").size().sort_values(ascending=False)
+        top_maint_comm = maint_comm.index[0]
+        actions.append({"priority": "high", "text": f"'{top_maint_comm}' leads in maintenance complaints ({maint_comm.values[0]:,}). Schedule a preventive maintenance audit for this community — proactive repairs cost 60% less than emergency fixes."})
+    
+    return actions
+
+
+def insights_ai_performance(interactions, residents, leads):
+    """Generate AI insights for the AI Performance page."""
+    actions = []
+    
+    ai_rate = interactions["resolved_by_ai"].mean() * 100
+    esc_rate = interactions["escalated_to_human"].mean() * 100
+    
+    if esc_rate > 20:
+        actions.append({"priority": "high", "text": f"Escalation rate is {esc_rate:.1f}% — every 1% reduction saves ~{int(len(interactions) * 0.01 * 15):,} SAR annually. Analyze the top 3 escalation purposes and expand AI training data for those scenarios."})
+    
+    # CSAT gap between AI and human
+    ai_csat = interactions[interactions["resolved_by_ai"] == True]["csat_score"].mean() if "resolved_by_ai" in interactions.columns else 0
+    human_csat = interactions[interactions["resolved_by_ai"] == False]["csat_score"].mean() if "resolved_by_ai" in interactions.columns else 0
+    if human_csat > ai_csat + 0.3:
+        actions.append({"priority": "medium", "text": f"Human-resolved interactions score {human_csat:.1f}/5 CSAT vs AI's {ai_csat:.1f}/5. Focus AI improvement on empathy signals and complex query handling to close the gap."})
+    
+    # Lead AI ROI
+    if not leads.empty:
+        ai_leads = leads[leads["ai_assisted"] == True]
+        manual_leads = leads[leads["ai_assisted"] == False]
+        ai_conv = (ai_leads["stage"] == "Won").mean() * 100 if len(ai_leads) > 0 else 0
+        man_conv = (manual_leads["stage"] == "Won").mean() * 100 if len(manual_leads) > 0 else 0
+        if ai_conv > man_conv:
+            actions.append({"priority": "medium", "text": f"AI-assisted leads convert at {ai_conv:.1f}% vs {man_conv:.1f}% for manual. Expand AI assistance to 100% of leads — current coverage is {leads['ai_assisted'].mean()*100:.0f}%."})
+        elif man_conv > ai_conv * 1.2:
+            actions.append({"priority": "high", "text": f"Manual leads outperform AI-assisted ({man_conv:.1f}% vs {ai_conv:.1f}%). Review AI lead scoring logic — it may be routing low-quality leads to agents, creating a misleading comparison."})
+    
+    return actions
+
 def risk_badge(grade):
     """Return HTML risk badge."""
     badge_map = {
@@ -998,6 +1343,9 @@ def page_executive_summary(residents, payments, complaints, bookings, interactio
                            "Default Rate %", "Avg Property Value (M SAR)"]
     
     st.dataframe(zone_metrics, use_container_width=True, hide_index=True)
+    
+    # ---- AI INSIGHTS ----
+    render_ai_insights(insights_overview(residents, payments, complaints, interactions))
 
 
 # ============================================================================
@@ -1219,6 +1567,9 @@ def page_payment_risk(residents, payments):
                             xaxis_title="", yaxis_title="Transactions")
             fig.update_xaxes(tickangle=-45)
             st.plotly_chart(fig, use_container_width=True)
+    
+    # ---- AI INSIGHTS ----
+    render_ai_insights(insights_payment_risk(residents, payments))
 
 
 # ============================================================================
@@ -1379,6 +1730,9 @@ def page_complaint_intelligence(residents, complaints):
     fig.update_layout(**PLOT_LAYOUT, height=450, barmode="group",
                      xaxis_title="Hours", yaxis_title="")
     st.plotly_chart(fig, use_container_width=True)
+    
+    # ---- AI INSIGHTS ----
+    render_ai_insights(insights_complaints(complaints))
 
 
 # ============================================================================
@@ -1541,6 +1895,9 @@ def page_sentiment_satisfaction(residents, interactions, complaints):
     ))
     fig.update_layout(**PLOT_LAYOUT, height=400, xaxis_title="Avg Sentiment", yaxis_title="")
     st.plotly_chart(fig, use_container_width=True)
+    
+    # ---- AI INSIGHTS ----
+    render_ai_insights(insights_sentiment(residents, interactions))
 
 
 # ============================================================================
@@ -1971,6 +2328,9 @@ def page_lead_intelligence(leads):
                 mime="text/csv",
                 use_container_width=False,
             )
+    
+    # ---- AI INSIGHTS ----
+    render_ai_insights(insights_leads(leads))
 
 
 # ============================================================================
@@ -2233,6 +2593,9 @@ def page_demand_forecasting(bookings, complaints, interactions):
         )])
         fig.update_layout(**PLOT_LAYOUT, height=400, xaxis_title="Maintenance Requests", yaxis_title="")
         st.plotly_chart(fig, use_container_width=True)
+    
+    # ---- AI INSIGHTS ----
+    render_ai_insights(insights_demand(bookings, complaints))
 
 
 # ============================================================================
@@ -2591,6 +2954,9 @@ def page_ai_performance(interactions, residents, leads):
         source_perf = source_perf.sort_values("conv_rate", ascending=False)
         source_perf.columns = ["Source", "Total Leads", "Won", "AI Assisted %", "Avg Score", "Conv Rate %"]
         st.dataframe(source_perf, use_container_width=True, hide_index=True)
+    
+    # ---- AI INSIGHTS ----
+    render_ai_insights(insights_ai_performance(interactions, residents, leads))
 
 
 # ============================================================================
