@@ -94,6 +94,15 @@ st.markdown("""
        ================================================================== */
     .stApp {
         font-family: 'Lato', sans-serif;
+        background-color: var(--bg-primary);
+    }
+    
+    /* Smooth scroll */
+    html { scroll-behavior: smooth; }
+    
+    /* Remove Streamlit's default column gap */
+    [data-testid="stHorizontalBlock"] {
+        gap: 0.75rem;
     }
 
     /* ---- Sidebar ---- */
@@ -141,7 +150,7 @@ st.markdown("""
     .kpi-card {
         background: var(--bg-card);
         border: 1px solid var(--border-main);
-        border-radius: 12px;
+        border-radius: 14px;
         padding: 22px 16px;
         text-align: center;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -151,9 +160,21 @@ st.markdown("""
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .kpi-card::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, var(--border-main), transparent);
+        opacity: 0.5;
     }
     .kpi-card:hover {
-        transform: translateY(-4px);
+        transform: translateY(-5px);
         box-shadow: var(--shadow-hover);
     }
     /* #11: Fade-in animation for KPI cards */
@@ -172,38 +193,49 @@ st.markdown("""
         line-height: 1.1;
     }
     .kpi-label {
-        font-size: 11px;
+        font-size: 10px;
         color: var(--text-muted);
         text-transform: uppercase;
-        letter-spacing: 2px;
+        letter-spacing: 2.5px;
         margin-bottom: 6px;
         font-family: 'Lato', sans-serif;
-        font-weight: 600;
+        font-weight: 700;
     }
     .kpi-delta {
-        font-size: 12px;
+        font-size: 11.5px;
         margin-top: 6px;
-        font-weight: 500;
+        font-weight: 600;
+        letter-spacing: 0.3px;
     }
     .delta-up { color: #2E7D46; }
     .delta-down { color: #C4515A; }
 
     /* ---- Section Headers ---- */
     .section-header {
-        background: var(--bg-section);
+        background: linear-gradient(90deg, #F5F0E6 0%, #FDFCFA 60%, transparent 100%);
         border-left: 4px solid var(--accent-gold);
         padding: 10px 20px;
-        border-radius: 0 8px 8px 0;
-        margin: 18px 0 14px 0;
+        border-radius: 0 10px 10px 0;
+        margin: 20px 0 14px 0;
         box-shadow: inset 4px 0 12px rgba(184, 134, 11, 0.1);
+        position: relative;
+    }
+    .section-header::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 4px;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, var(--border-main), transparent 80%);
     }
     .section-header h3 {
         margin: 0 !important;
         color: var(--text-primary) !important;
-        font-size: 14px !important;
+        font-size: 13.5px !important;
         font-family: 'Lato', sans-serif !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.8px !important;
+        font-weight: 700 !important;
+        letter-spacing: 1px !important;
         text-transform: uppercase !important;
     }
 
@@ -253,12 +285,24 @@ st.markdown("""
 
     /* ---- AI Insight Panel ---- */
     .ai-insight-panel {
-        background: linear-gradient(135deg, #FFFDF5 0%, #FFF8E7 100%);
-        border: 1.5px solid #D4B06A;
+        background: linear-gradient(135deg, #FFFDF5 0%, #FFF9EC 50%, #FFFDF5 100%);
+        border: 1px solid #D4B06A;
+        border-left: 5px solid #B8860B;
         border-radius: 12px;
-        padding: 20px 24px;
-        margin: 16px 0 24px 0;
-        box-shadow: 0 4px 16px rgba(184, 134, 11, 0.08);
+        padding: 22px 26px;
+        margin: 20px 0 28px 0;
+        box-shadow: 0 4px 20px rgba(184, 134, 11, 0.08);
+        position: relative;
+    }
+    .ai-insight-panel::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 120px;
+        height: 120px;
+        background: radial-gradient(circle at top right, rgba(184, 134, 11, 0.04), transparent 70%);
+        border-radius: 0 12px 0 0;
     }
     .ai-insight-panel .ai-header {
         display: flex;
@@ -354,8 +398,74 @@ st.markdown("""
     /* ---- Dataframe ---- */
     .stDataFrame {
         border: 1px solid var(--border-main);
-        border-radius: 8px;
+        border-radius: 10px;
         overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+    /* Dataframe header row */
+    .stDataFrame [data-testid="stDataFrameResizable"] {
+        font-family: 'Lato', sans-serif !important;
+    }
+
+    /* ---- Selectbox / Drill-down styling ---- */
+    .stSelectbox > div > div {
+        border-color: var(--border-main) !important;
+        border-radius: 8px !important;
+        font-family: 'Lato', sans-serif !important;
+        font-size: 13px !important;
+    }
+    .stSelectbox label {
+        color: var(--text-muted) !important;
+        font-family: 'Lato', sans-serif !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    /* ---- Expanders (drill-down panels) ---- */
+    .stExpander {
+        border: 1px solid var(--border-main) !important;
+        border-radius: 10px !important;
+        box-shadow: var(--shadow-sm) !important;
+        overflow: hidden;
+        margin: 8px 0 16px 0 !important;
+    }
+    .stExpander > details > summary {
+        font-family: 'Lato', sans-serif !important;
+        font-weight: 600 !important;
+        font-size: 14px !important;
+        color: var(--text-primary) !important;
+        padding: 12px 16px !important;
+        background: linear-gradient(90deg, #F5F0E6 0%, var(--bg-card) 100%) !important;
+    }
+    .stExpander > details > summary:hover {
+        color: var(--accent-gold) !important;
+    }
+    .stExpander > details[open] > summary {
+        border-bottom: 1px solid var(--border-main) !important;
+    }
+
+    /* ---- st.metric inside drill-downs ---- */
+    [data-testid="stMetric"] {
+        background: var(--bg-card);
+        border: 1px solid var(--border-main);
+        border-radius: 10px;
+        padding: 14px 12px;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.03);
+    }
+    [data-testid="stMetricValue"] {
+        color: var(--text-primary) !important;
+        font-family: 'Playfair Display', serif !important;
+        font-size: 22px !important;
+        font-weight: 700 !important;
+    }
+    [data-testid="stMetricLabel"] {
+        color: var(--text-muted) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1.2px !important;
+        font-size: 10px !important;
+        font-weight: 700 !important;
+        font-family: 'Lato', sans-serif !important;
     }
 
     /* ---- Divider ---- */
@@ -380,9 +490,10 @@ st.markdown("""
     .stPlotlyChart {
         background: var(--bg-chart);
         border: 1px solid var(--border-main);
-        border-radius: 12px;
+        border-radius: 14px;
         overflow: hidden;
-        box-shadow: var(--shadow-sm);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        padding: 4px;
     }
     /* Hide Plotly modebar until hover */
     .stPlotlyChart .modebar-container {
@@ -390,10 +501,10 @@ st.markdown("""
         transition: opacity 0.3s ease;
     }
     .stPlotlyChart:hover .modebar-container {
-        opacity: 0.7;
+        opacity: 0.6;
     }
     .stPlotlyChart .modebar-btn {
-        font-size: 14px !important;
+        font-size: 13px !important;
     }
 
     /* ---- Hide Streamlit Branding & Sidebar ---- */
@@ -417,34 +528,34 @@ st.markdown("""
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 10px 0 8px 0;
+        padding: 12px 0 10px 0;
         border-bottom: 2px solid var(--accent-gold);
         margin-bottom: 0;
-        background: linear-gradient(180deg, rgba(184, 134, 11, 0.05) 0%, transparent 100%);
+        background: linear-gradient(180deg, rgba(184, 134, 11, 0.04) 0%, transparent 100%);
     }
     .header-brand {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
     }
-    .header-brand .diamond { color: var(--accent-gold); font-size: 10px; text-shadow: 0 0 10px rgba(184, 134, 11, 0.5); }
+    .header-brand .diamond { color: var(--accent-gold); font-size: 9px; text-shadow: 0 0 10px rgba(184, 134, 11, 0.5); }
     .header-brand .name {
         font-family: 'Playfair Display', serif;
-        font-size: 22px;
+        font-size: 24px;
         font-weight: 700;
         color: var(--text-primary);
-        letter-spacing: 2px;
+        letter-spacing: 3px;
     }
     .header-brand .subtitle {
         font-family: 'Lato', sans-serif;
-        font-size: 11px;
+        font-size: 10.5px;
         color: var(--accent-gold);
-        letter-spacing: 2.5px;
+        letter-spacing: 3px;
         text-transform: uppercase;
-        margin-left: 14px;
-        padding-left: 14px;
-        border-left: 1.5px solid var(--accent-gold);
-        font-weight: 600;
+        margin-left: 16px;
+        padding-left: 16px;
+        border-left: 2px solid var(--accent-gold);
+        font-weight: 700;
     }
     .header-meta {
         font-size: 10px;
@@ -633,10 +744,10 @@ st.markdown("""
 
     /* ---- Gold accent line ---- */
     .gold-line {
-        width: 50px;
+        width: 60px;
         height: 3px;
-        background: linear-gradient(90deg, var(--accent-gold), rgba(184, 134, 11, 0.4));
-        margin: 8px auto;
+        background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+        margin: 10px auto;
         border-radius: 2px;
     }
 
@@ -794,7 +905,7 @@ def kpi_card(label, value, delta=None, delta_dir="up", color="#4ECDC4"):
         delta_html = f'<div class="kpi-delta {delta_class}">{arrow} {delta}</div>'
     
     return f"""
-    <div class="kpi-card" style="border-top: 3px solid {color};">
+    <div class="kpi-card" style="border-top: 4px solid {color};">
         <div class="kpi-label">{label}</div>
         <div class="kpi-value" style="color: {color};">{value}</div>
         {delta_html}
