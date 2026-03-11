@@ -953,31 +953,36 @@ def insights_overview(residents, payments, complaints, interactions):
     """Generate AI insights for the Executive Summary page."""
     actions = []
     default_rate = residents["default_flag"].mean() * 100
+    total_residents = len(residents)
+    
+    # Always-on: Default rate assessment
     if default_rate > 15:
         actions.append({"priority": "critical", "text": f"Default rate is {default_rate:.1f}% — well above the 10% industry benchmark. Launch an immediate collections task force targeting the {len(residents[residents['risk_category'].isin(['High', 'Critical'])]):,} high-risk residents before Q2 close."})
     elif default_rate > 8:
-        actions.append({"priority": "high", "text": f"Default rate at {default_rate:.1f}% is trending above target. Prioritize proactive payment plan outreach to residents with DPD between 15-45 days to prevent escalation."})
+        actions.append({"priority": "high", "text": f"Default rate at {default_rate:.1f}% is above target. Prioritize proactive payment plan outreach to residents in the 30-60 DPD window to prevent escalation to delinquency."})
+    else:
+        actions.append({"priority": "low", "text": f"Default rate at {default_rate:.1f}% is within healthy range. Maintain current monitoring cadence and focus collections resources on the {len(residents[residents['risk_category'].isin(['High', 'Critical'])]):,} high-risk accounts."})
     
+    # Always-on: Complaint load
     active_complaints = len(complaints[complaints["status"].isin(["Open", "In Progress"])])
-    complaint_ratio = active_complaints / max(len(residents), 1) * 100
-    if complaint_ratio > 30:
-        actions.append({"priority": "high", "text": f"{active_complaints:,} active complaints ({complaint_ratio:.0f}% of residents). The top 3 complaint categories should be triaged this week — assign dedicated resolution teams to reduce backlog by 50%."})
+    complaint_ratio = active_complaints / max(total_residents, 1) * 100
+    top_cat = complaints[complaints["status"].isin(["Open", "In Progress"])]["category"].value_counts()
+    top_cat_name = top_cat.index[0] if len(top_cat) > 0 else "N/A"
+    top_cat_count = top_cat.values[0] if len(top_cat) > 0 else 0
+    actions.append({"priority": "high" if complaint_ratio > 30 else "medium", "text": f"{active_complaints:,} open complaints ({complaint_ratio:.0f}% of residents). Top backlog: '{top_cat_name}' with {top_cat_count:,} open cases — assign a dedicated resolution team to this category to reduce backlog by 50% in 2 weeks."})
     
+    # Always-on: AI efficiency
     ai_rate = interactions["resolved_by_ai"].mean() * 100
-    if ai_rate < 75:
-        actions.append({"priority": "medium", "text": f"AI resolution rate is {ai_rate:.1f}%. Analyze the {interactions['escalated_to_human'].sum():,} escalated cases to identify training gaps — improving AI handling of the top 2 escalation reasons could push resolution above 80%."})
+    esc_count = int(interactions["escalated_to_human"].sum())
+    actions.append({"priority": "medium" if ai_rate < 75 else "low", "text": f"AI resolves {ai_rate:.1f}% of interactions automatically ({esc_count:,} escalated to humans). " + ("Analyze top escalation reasons to push AI resolution above 80% — each 1% improvement saves ~{:.0f}K SAR annually.".format(len(interactions) * 0.01 * 15 / 1000) if ai_rate < 80 else "AI performance is strong. Focus on maintaining quality while expanding to new interaction types.")})
     
-    # Community-specific insight
+    # Always-on: Worst community
     comm_risk = residents.groupby("community")["default_flag"].mean()
     worst_comm = comm_risk.idxmax()
     worst_rate = comm_risk.max() * 100
-    if worst_rate > default_rate * 1.3:
-        actions.append({"priority": "high", "text": f"{worst_comm} has a {worst_rate:.1f}% default rate — {worst_rate - default_rate:.1f}pp above portfolio average. Deploy a dedicated community manager with payment support resources."})
-    
-    # Satisfaction insight
-    avg_sat = residents["satisfaction_score"].mean()
-    if avg_sat < 70:
-        actions.append({"priority": "medium", "text": f"Overall satisfaction is {avg_sat:.1f}/100. Focus service recovery on the bottom 3 communities and implement a 48-hour complaint resolution SLA to drive scores above 75."})
+    best_comm = comm_risk.idxmin()
+    best_rate = comm_risk.min() * 100
+    actions.append({"priority": "high" if worst_rate > default_rate * 1.3 else "medium", "text": f"Community risk spread: {worst_comm} ({worst_rate:.1f}% default) vs {best_comm} ({best_rate:.1f}%). " + (f"Deploy targeted support to {worst_comm} — the {worst_rate - default_rate:.1f}pp gap above average suggests community-specific issues." if worst_rate > default_rate * 1.2 else "Risk is relatively uniform across communities — maintain portfolio-wide monitoring.")})
     
     return actions
 
@@ -985,31 +990,35 @@ def insights_overview(residents, payments, complaints, interactions):
 def insights_payment_risk(residents, payments):
     """Generate AI insights for the Payment Risk page."""
     actions = []
-    
-    # High-risk concentration
-    high_risk = residents[residents["risk_category"].isin(["High", "Critical"])]
-    if len(high_risk) > 0:
-        hr_balance = high_risk["outstanding_balance_aed"].sum()
-        hr_str = f"{hr_balance/1e9:.1f}B" if hr_balance >= 1e9 else f"{hr_balance/1e6:.0f}M"
-        actions.append({"priority": "critical", "text": f"{len(high_risk):,} residents at high/critical risk with {hr_str} SAR outstanding. Start with the top 25 by risk score — personal outreach within 48 hours with tailored payment restructuring options."})
-    
-    # DPD threshold crossers
-    dpd_30_60 = residents[(residents["current_dpd"] >= 30) & (residents["current_dpd"] < 60)]
-    if len(dpd_30_60) > 50:
-        actions.append({"priority": "high", "text": f"{len(dpd_30_60):,} residents are in the 30-60 DPD danger zone — the critical intervention window. Automated SMS + email payment reminders should be triggered immediately, followed by agent calls for accounts over 500K SAR."})
-    
-    # Zone with worst performance
-    zone_default = residents.groupby("zone")["default_flag"].mean()
-    worst_zone = zone_default.idxmax()
-    worst_z_rate = zone_default.max() * 100
     avg_rate = residents["default_flag"].mean() * 100
-    if worst_z_rate > avg_rate * 1.2:
-        actions.append({"priority": "medium", "text": f"{worst_zone} has {worst_z_rate:.1f}% default rate vs {avg_rate:.1f}% portfolio average. Investigate zone-specific factors (maintenance issues, community management quality) that may be driving dissatisfaction and defaults."})
     
-    # Credit score deterioration signal
-    low_credit = residents[residents["credit_score"] < 500]
-    if len(low_credit) > 100:
-        actions.append({"priority": "medium", "text": f"{len(low_credit):,} residents have credit scores below 500. Cross-reference with complaint history — residents with both low credit and high complaints are prime candidates for retention-risk intervention."})
+    # Always-on: High-risk residents
+    high_risk = residents[residents["risk_category"].isin(["High", "Critical"])]
+    hr_balance = high_risk["outstanding_balance_aed"].sum() if len(high_risk) > 0 else 0
+    hr_str = f"{hr_balance/1e9:.1f}B" if hr_balance >= 1e9 else f"{hr_balance/1e6:.0f}M"
+    if len(high_risk) > 0:
+        actions.append({"priority": "critical", "text": f"{len(high_risk):,} residents at high/critical risk holding {hr_str} SAR in outstanding balances. Start with the top 25 by risk score — personal outreach within 48 hours with tailored payment restructuring options."})
+    
+    # Always-on: DPD analysis
+    dpd_0 = (residents["current_dpd"] == 0).sum()
+    dpd_1_30 = ((residents["current_dpd"] > 0) & (residents["current_dpd"] <= 30)).sum()
+    dpd_30_60 = ((residents["current_dpd"] > 30) & (residents["current_dpd"] <= 60)).sum()
+    dpd_60_plus = (residents["current_dpd"] > 60).sum()
+    if dpd_30_60 > 0:
+        actions.append({"priority": "high", "text": f"DPD breakdown: {dpd_0:,} current, {dpd_1_30:,} early (1-30), {dpd_30_60:,} in danger zone (30-60), {dpd_60_plus:,} delinquent (60+). The {dpd_30_60:,} residents in the 30-60 window are the highest-ROI intervention target — automated reminders + agent calls before they cross 60 days."})
+    
+    # Always-on: Zone comparison
+    zone_default = residents.groupby("zone")["default_flag"].mean().sort_values(ascending=False)
+    worst_zone = zone_default.index[0]
+    best_zone = zone_default.index[-1]
+    worst_z_rate = zone_default.values[0] * 100
+    best_z_rate = zone_default.values[-1] * 100
+    actions.append({"priority": "high" if worst_z_rate > avg_rate * 1.3 else "medium", "text": f"Zone '{worst_zone}' has the highest default rate ({worst_z_rate:.1f}%) while '{best_zone}' has the lowest ({best_z_rate:.1f}%). " + (f"The {worst_z_rate - avg_rate:.1f}pp gap above average in {worst_zone} suggests zone-specific issues — cross-reference with complaint data for root cause." if worst_z_rate > avg_rate * 1.2 else f"Default risk is relatively even across zones. Focus on individual high-risk accounts rather than zone-level interventions.")})
+    
+    # Always-on: Payment pattern
+    on_time_rate = (payments["payment_status"] == "Paid").mean() * 100
+    late_rate = (payments["payment_status"] == "Paid Late").mean() * 100
+    actions.append({"priority": "medium" if on_time_rate < 60 else "low", "text": f"Payment health: {on_time_rate:.0f}% on-time, {late_rate:.0f}% late. " + (f"With {late_rate:.0f}% paying late, introduce automated payment reminders 5 days before due date and offer auto-debit enrollment incentives." if late_rate > 15 else "On-time payment rates are healthy. Maintain current reminder cadence and reward consistent payers with loyalty benefits.")})
     
     return actions
 
@@ -1017,37 +1026,36 @@ def insights_payment_risk(residents, payments):
 def insights_complaints(complaints):
     """Generate AI insights for the Complaints page."""
     actions = []
+    total = len(complaints)
     
+    # Always-on: Top backlog category
     open_complaints = complaints[complaints["status"].isin(["Open", "In Progress"])]
-    
-    # Oldest unresolved
     if len(open_complaints) > 0:
         top_cat = open_complaints["category"].value_counts()
-        if len(top_cat) > 0:
-            top_name = top_cat.index[0]
-            top_count = top_cat.values[0]
-            actions.append({"priority": "high", "text": f"'{top_name}' has {top_count:,} open complaints — the highest backlog. Assign a dedicated team of 3 agents to clear this category within 2 weeks using batch resolution templates."})
+        top_name = top_cat.index[0]
+        top_count = top_cat.values[0]
+        actions.append({"priority": "high", "text": f"'{top_name}' leads the open backlog with {top_count:,} unresolved complaints out of {len(open_complaints):,} total. Assign a dedicated team of 3 agents to clear this category within 2 weeks using batch resolution templates."})
     
-    # Escalation patterns
-    escalated = complaints[complaints["status"] == "Escalated"]
-    if len(escalated) > len(complaints) * 0.04:
-        esc_pct = len(escalated) / len(complaints) * 100
-        actions.append({"priority": "critical", "text": f"Escalation rate is {esc_pct:.1f}% — target should be below 3%. Review the escalation criteria and empower front-line agents with higher resolution authority to reduce unnecessary escalations."})
+    # Always-on: Escalation assessment
+    escalated = len(complaints[complaints["status"] == "Escalated"])
+    esc_pct = escalated / max(total, 1) * 100
+    actions.append({"priority": "critical" if esc_pct > 5 else "high" if esc_pct > 3 else "medium", "text": f"Escalation rate is {esc_pct:.1f}% ({escalated:,} cases). " + (f"This exceeds the 3% target — review escalation criteria and empower front-line agents with higher resolution authority." if esc_pct > 3 else f"Below the 3% target threshold. Maintain current escalation protocols and monitor for any upward trends.")})
     
-    # Resolution time outliers
+    # Always-on: Resolution time analysis
     avg_resolution = complaints["resolution_hours"].mean()
-    if avg_resolution > 72:
-        slow_cats = complaints.groupby("category")["resolution_hours"].mean().sort_values(ascending=False).head(3)
-        slow_names = ", ".join(slow_cats.index.tolist())
-        actions.append({"priority": "medium", "text": f"Average resolution is {avg_resolution:.0f} hours (target: <48). Slowest categories: {slow_names}. Create SOP fast-track workflows for these categories to cut resolution time by 40%."})
+    resolution_by_cat = complaints.groupby("category")["resolution_hours"].mean().sort_values(ascending=False)
+    slowest_cat = resolution_by_cat.index[0]
+    slowest_hrs = resolution_by_cat.values[0]
+    actions.append({"priority": "high" if avg_resolution > 72 else "medium", "text": f"Average resolution is {avg_resolution:.0f} hours. Slowest category: '{slowest_cat}' at {slowest_hrs:.0f} hours. " + (f"Create SOP fast-track workflows for this category to cut resolution time by 40%." if slowest_hrs > 80 else f"Consider setting a 48-hour SLA for all categories to drive continuous improvement.")})
     
-    # Zone with most critical complaints
-    if "severity" in complaints.columns:
-        critical_by_zone = complaints[complaints["severity"] == "Critical"].groupby("zone").size()
-        if len(critical_by_zone) > 0:
-            worst_zone = critical_by_zone.idxmax()
-            worst_count = critical_by_zone.max()
-            actions.append({"priority": "high", "text": f"{worst_zone} has {worst_count:,} critical complaints. Schedule an emergency review with the zone's facilities team and create a 7-day action plan for the top 5 issues."})
+    # Always-on: Severity distribution insight
+    critical_count = len(complaints[complaints["severity"] == "Critical"])
+    critical_pct = critical_count / max(total, 1) * 100
+    if critical_count > 0:
+        worst_zone = complaints[complaints["severity"] == "Critical"]["zone"].value_counts()
+        wz_name = worst_zone.index[0] if len(worst_zone) > 0 else "N/A"
+        wz_count = worst_zone.values[0] if len(worst_zone) > 0 else 0
+        actions.append({"priority": "high" if critical_pct > 5 else "medium", "text": f"{critical_count:,} critical complaints ({critical_pct:.1f}% of total). Zone '{wz_name}' has the most ({wz_count:,}). Schedule an emergency review with the zone facilities team and create a 7-day action plan for the top 5 issues."})
     
     return actions
 
@@ -1058,30 +1066,53 @@ def insights_sentiment(residents, interactions):
     
     avg_sentiment = interactions["sentiment_score"].mean()
     negative_pct = (interactions["sentiment_score"] < -0.2).mean() * 100
+    positive_pct = (interactions["sentiment_score"] > 0.2).mean() * 100
+    avg_csat = interactions["csat_score"].mean()
     
-    if negative_pct > 25:
-        actions.append({"priority": "critical", "text": f"{negative_pct:.0f}% of interactions have negative sentiment. Launch a Voice of Customer program — extract the top 5 negative themes from recent interactions and create targeted improvement plans for each."})
+    # Always-on: Sentiment health assessment
+    if negative_pct > 20:
+        actions.append({"priority": "critical", "text": f"{negative_pct:.0f}% of interactions have negative sentiment — over 1 in 5 residents leave conversations unhappy. Launch a Voice of Customer program to extract the top 5 negative themes and create targeted improvement plans."})
+    elif negative_pct > 15:
+        actions.append({"priority": "high", "text": f"{negative_pct:.0f}% of interactions carry negative sentiment. Implement real-time sentiment monitoring to flag negative interactions for supervisor review within the same business day."})
+    else:
+        neutral_pct = 100 - positive_pct - negative_pct
+        if neutral_pct > 40:
+            actions.append({"priority": "medium", "text": f"{neutral_pct:.0f}% of interactions have neutral sentiment — residents are not dissatisfied but also not delighted. Introduce proactive follow-up messages after service interactions to convert neutral experiences into positive ones."})
     
-    # Channel gap
-    channel_sent = interactions.groupby("channel")["sentiment_score"].mean()
+    # Always-on: Channel comparison (always useful)
+    channel_sent = interactions.groupby("channel")["sentiment_score"].mean().sort_values()
     best_ch = channel_sent.idxmax()
     worst_ch = channel_sent.idxmin()
     gap = channel_sent.max() - channel_sent.min()
-    if gap > 0.15:
-        actions.append({"priority": "high", "text": f"'{worst_ch}' channel sentiment ({channel_sent.min():.2f}) is significantly lower than '{best_ch}' ({channel_sent.max():.2f}). Audit the {worst_ch} experience — likely issues: long wait times, unhelpful scripts, or poor agent training."})
+    if gap > 0.08:
+        actions.append({"priority": "high" if gap > 0.15 else "medium", "text": f"'{best_ch}' channel leads in sentiment ({channel_sent.max():.2f}) while '{worst_ch}' lags ({channel_sent.min():.2f}). Study what makes {best_ch} successful (faster resolution? better scripts?) and replicate those practices in {worst_ch}."})
     
-    # Low-satisfaction communities
-    comm_sat = residents.groupby("community")["satisfaction_score"].mean()
-    low_comms = comm_sat[comm_sat < 65]
-    if len(low_comms) > 0:
-        comm_names = ", ".join(low_comms.index.tolist())
-        actions.append({"priority": "high", "text": f"Communities below 65 satisfaction: {comm_names}. Assign community experience managers and run resident town halls within 30 days to identify and address specific pain points."})
+    # Always-on: Community satisfaction ranking
+    comm_sat = residents.groupby("community")["satisfaction_score"].mean().sort_values()
+    bottom_3 = comm_sat.head(3)
+    top_3 = comm_sat.tail(3)
+    worst_comm = comm_sat.index[0]
+    worst_score = comm_sat.values[0]
+    best_score = comm_sat.values[-1]
+    spread = best_score - worst_score
     
-    # CSAT trend
-    avg_csat = interactions["csat_score"].mean()
+    if spread > 5:
+        actions.append({"priority": "high" if spread > 10 else "medium", "text": f"Satisfaction ranges from {worst_score:.1f} ({worst_comm}) to {best_score:.1f} ({comm_sat.index[-1]}) — a {spread:.1f}-point gap. Pair the bottom 3 communities ({', '.join(bottom_3.index.tolist())}) with mentors from the top 3 ({', '.join(top_3.index.tolist())}) to transfer best practices."})
+    
+    # CSAT distribution insight
     low_csat_pct = (interactions["csat_score"] <= 2).mean() * 100
-    if low_csat_pct > 15:
-        actions.append({"priority": "medium", "text": f"{low_csat_pct:.0f}% of interactions received CSAT 1-2 (very dissatisfied). Implement a real-time CSAT alert system — any score of 1 should trigger an automatic callback from a senior agent within 4 hours."})
+    high_csat_pct = (interactions["csat_score"] >= 4).mean() * 100
+    if low_csat_pct > 10:
+        actions.append({"priority": "high" if low_csat_pct > 20 else "medium", "text": f"{low_csat_pct:.0f}% of interactions scored CSAT 1-2 while {high_csat_pct:.0f}% scored 4-5. Implement an automatic callback for every CSAT-1 rating — recovering these detractors has 5x the retention impact of delighting already-happy residents."})
+    
+    # Sentiment by purpose — find worst purpose
+    purpose_sent = interactions.groupby("purpose")["sentiment_score"].mean().sort_values()
+    worst_purpose = purpose_sent.index[0]
+    worst_p_score = purpose_sent.values[0]
+    if worst_p_score < 0:
+        actions.append({"priority": "high", "text": f"'{worst_purpose}' interactions have negative average sentiment ({worst_p_score:.2f}). This interaction type is creating detractors — redesign the process flow, add proactive status updates, and train agents specifically for this scenario."})
+    elif worst_p_score < 0.15:
+        actions.append({"priority": "medium", "text": f"'{worst_purpose}' has the lowest sentiment ({worst_p_score:.2f}) among interaction types. While not negative, there's room to improve — consider adding automated follow-ups and satisfaction checks for this purpose."})
     
     return actions
 
