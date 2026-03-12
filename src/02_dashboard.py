@@ -1262,10 +1262,6 @@ def render_top_nav():
             <span class="diamond">◆</span>
             <span class="subtitle">Community Intelligence</span>
         </div>
-        <div class="header-meta">
-            <span>LIVE</span>&ensp;
-            <span class="time">◉ {datetime.now().strftime("%d %b %Y, %H:%M")}</span>
-        </div>
     </div>
     """, unsafe_allow_html=True)
 
