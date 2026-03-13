@@ -5,10 +5,10 @@ enableCORS = false
 
 [theme]
 base = "light"
-backgroundColor = "#F7F5F0"
-secondaryBackgroundColor = "#F2EDE3"
-textColor = "#1A1A1A"
-primaryColor = "#B8860B"
+backgroundColor = "#F0F4F8"
+secondaryBackgroundColor = "#E8EEF5"
+textColor = "#1A2B3C"
+primaryColor = "#007AE3"
 
 [browser]
 gatherUsageStats = false
