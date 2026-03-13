@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+"""
+============================================================================
+ROSHN Community Intelligence Command Center
+============================================================================
+Enterprise AI for Real Estate Operations
+ML Intelligence & Predictive Analytics Dashboard
+
+Author  : Sreekrishnan
+Version : 1.0
+Run     : streamlit run src/02_dashboard.py
+============================================================================
+"""
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -34,82 +47,68 @@ OUTPUT_DIR = os.path.join(PROJECT_DIR, "outputs")
 st.markdown("""
 <style>
     /* ---- Fonts ---- */
+    /* ---- Fonts ---- */
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Lato:wght@300;400;500;600;700&display=swap');
 
     /* ==================================================================
        CSS VARIABLES - Light Mode (Default)
        ================================================================== */
     /* ==================================================================
-       THEME VARIABLES — Change these to restyle the entire dashboard
-       
-       HOW TO USE:
-       - Change any value below and it cascades to ALL components
-       - Colors use hex (#B8860B) or rgba for transparency
-       - Sizes use px, rem, or % 
-       - To change the brand color: update --accent-gold
-       - To change the background: update --bg-primary
-       - To change text darkness: update --text-primary
+       THEME VARIABLES — Call360 Blue Scheme
+       Primary accent: #007AE3 (nsp-primary-blue)
+       Secondary accent: #00BCD4 (nsp-tech-cyan)
        ================================================================== */
     :root {
         /* ── BACKGROUNDS ─────────────────────────────────────────── */
-        --bg-primary: #F7F5F0;        /* Main page background (warm off-white) */
+        --bg-primary: #F0F4F8;         /* Main page background (cool blue-gray) */
         --bg-card: #FFFFFF;            /* KPI cards, chart wrappers, tables */
-        --bg-sidebar: linear-gradient(180deg, #2C2C2C 0%, #1A1A1A 100%);  /* Sidebar gradient (hidden in current layout) */
-        --bg-section: linear-gradient(90deg, #F2EDE3 0%, transparent 100%);  /* Section header background fade */
+        --bg-sidebar: linear-gradient(180deg, #0A1628 0%, #0D1F3C 100%);  /* Sidebar gradient */
+        --bg-section: linear-gradient(90deg, #E8EEF5 0%, transparent 100%);  /* Section header background fade */
         --bg-chart: #FFFFFF;           /* Plotly chart container background */
-        --bg-plot: #FDFCFA;            /* Plotly plot area inside chart */
+        --bg-plot: #FAFCFF;            /* Plotly plot area inside chart */
 
         /* ── TEXT COLORS ─────────────────────────────────────────── */
-        --text-primary: #1A1A1A;       /* Headings, KPI values, strong text */
-        --text-secondary: #3D3D3D;     /* Body paragraphs, descriptions */
-        --text-muted: #7A6C5D;         /* Labels, captions, nav items (inactive) */
-        --text-heading2: #8B6914;      /* H2 subheadings (gold-brown) */
-        --text-sidebar: #D4C5B0;       /* Sidebar text (light for dark sidebar bg) */
-        --text-chart: #2A2A2A;         /* Chart axis labels, tick text */
+        --text-primary: #1A2B3C;       /* Headings, KPI values, strong text */
+        --text-secondary: #334E68;     /* Body paragraphs, descriptions */
+        --text-muted: #64748B;         /* Labels, captions, nav items (inactive) */
+        --text-heading2: #005BB5;      /* H2 subheadings (deep blue) */
+        --text-sidebar: #B5D4F4;       /* Sidebar text (light for dark sidebar bg) */
+        --text-chart: #1A2B3C;         /* Chart axis labels, tick text */
 
         /* ── BORDERS ─────────────────────────────────────────────── */
-        --border-main: #D8CDB8;        /* Card borders, dividers, table borders */
-        --border-grid: #E8E0D4;        /* Chart gridlines (lighter than borders) */
-        --border-sidebar: #3D3D3D;     /* Sidebar borders */
+        --border-main: #DBEAFE;        /* Card borders, dividers, table borders */
+        --border-grid: #EEF4FF;        /* Chart gridlines (lighter than borders) */
+        --border-sidebar: #1E3A5F;     /* Sidebar borders */
 
-        /* ── BRAND ACCENT — The signature gold ──────────────────── */
-        --accent-gold: #B8860B;        /* Gold accent: nav active, section bars, AI panel, badges */
-        --accent-hover: rgba(184, 134, 11, 0.14);  /* Gold with transparency for hover states */
+        /* ── BRAND ACCENT — Blue ────────────────────────────────── */
+        --accent-gold: #007AE3;        /* Primary accent: nav active, section bars, AI panel, badges */
+        --accent-hover: rgba(0, 122, 227, 0.10);  /* Blue with transparency for hover states */
 
         /* ── ALERTS ──────────────────────────────────────────────── */
-        --alert-bg: #FFFDF8;           /* Alert card background (warm white) */
-        --alert-text: #2A2A2A;         /* Alert body text */
+        --alert-bg: #F5F9FF;           /* Alert card background (cool white) */
+        --alert-text: #1A2B3C;         /* Alert body text */
 
         /* ── SHADOWS ─────────────────────────────────────────────── */
-        --shadow-sm: 0 2px 12px rgba(0,0,0,0.06);        /* Default card shadow */
-        --shadow-hover: 0 12px 36px rgba(184, 134, 11, 0.16);  /* Hover shadow (gold-tinted) */
+        --shadow-sm: 0 2px 12px rgba(0, 122, 227, 0.06);       /* Default card shadow */
+        --shadow-hover: 0 12px 36px rgba(0, 122, 227, 0.16);   /* Hover shadow (blue-tinted) */
 
         /* ── INTERACTIVE STATES ──────────────────────────────────── */
-        --hover-bg: #1A1A2E;           /* Hover background for buttons */
-        --hover-text: #FAF8F5;         /* Hover text color */
+        --hover-bg: #0A1628;           /* Hover background for buttons */
+        --hover-text: #F0F4F8;         /* Hover text color */
     }
-
-    /* ==================================================================
-       Dark Mode - DISABLED (forced light mode for consistent demo)
-       To re-enable: uncomment and wrap in @media (prefers-color-scheme: dark) { }
-       ================================================================== */
 
     /* ==================================================================
        GLOBAL STYLES
        ================================================================== */
-    /* ==================================================================
-       GLOBAL STYLES — Base app appearance
-       ================================================================== */
     .stApp {
-        font-family: 'Lato', sans-serif;       /* Default font for all text */
-        background-color: var(--bg-primary);    /* Page background color */
+        font-family: 'Lato', sans-serif;
+        background-color: var(--bg-primary);
     }
     
-    html { scroll-behavior: smooth; }           /* Smooth scroll between sections */
+    html { scroll-behavior: smooth; }
     
-    /* Column gap between side-by-side charts/cards */
     [data-testid="stHorizontalBlock"] {
-        gap: 0.75rem;                           /* Reduce Streamlit's default 1rem gap */
+        gap: 0.75rem;
     }
 
     /* ---- Sidebar ---- */
@@ -128,11 +127,7 @@ st.markdown("""
     }
 
     /* ==================================================================
-       TYPOGRAPHY — Page headings (H1, H2, H3) and body text
-       - H1: Playfair Display serif — used for page titles
-       - H2: Playfair Display — used for section subtitles (gold-brown)
-       - H3: Lato sans-serif — used inside section-header bars
-       - Body: Lato — all paragraph and list text
+       TYPOGRAPHY
        ================================================================== */
     h1 {
         color: var(--text-primary) !important;
@@ -152,7 +147,6 @@ st.markdown("""
         letter-spacing: 0.5px !important;
     }
 
-    /* ---- Text ---- */
     .stMarkdown p, .stMarkdown li {
         color: var(--text-secondary);
         font-family: 'Lato', sans-serif;
@@ -160,16 +154,7 @@ st.markdown("""
     }
 
     /* ==================================================================
-       KPI CARDS — The 6-column metric cards on every page
-       
-       STRUCTURE: .kpi-card > .kpi-label + .kpi-value + .kpi-delta
-       
-       TO CUSTOMIZE:
-       - Card size: change min-height (currently 145px)
-       - Value font size: change clamp() in .kpi-value (min 22px, max 32px)
-       - Top color bar: set in Python via border-top inline style
-       - Hover lift: change translateY in .kpi-card:hover (-5px)
-       - Animation: change fadeInUp duration (0.5s)
+       KPI CARDS
        ================================================================== */
     .kpi-card {
         background: var(--bg-card);
@@ -201,7 +186,6 @@ st.markdown("""
         transform: translateY(-5px);
         box-shadow: var(--shadow-hover);
     }
-    /* #11: Fade-in animation for KPI cards */
     @keyframes fadeInUp {
         from { opacity: 0; transform: translateY(12px); }
         to { opacity: 1; transform: translateY(0); }
@@ -239,25 +223,15 @@ st.markdown("""
     .delta-down { color: #C4515A; }
 
     /* ==================================================================
-       SECTION HEADERS — Gold-bordered bars above each chart group
-       
-       STRUCTURE: .section-header > h3
-       - Left gold border (4px) acts as visual anchor
-       - Gradient background fades from warm linen to transparent
-       - ::after pseudo-element adds a subtle bottom hairline
-       
-       TO CUSTOMIZE:
-       - Border color: change var(--accent-gold)
-       - Background: change the gradient in .section-header
-       - Font size: change font-size in .section-header h3 (13.5px)
+       SECTION HEADERS
        ================================================================== */
     .section-header {
-        background: linear-gradient(90deg, #F5F0E6 0%, #FDFCFA 60%, transparent 100%);
+        background: linear-gradient(90deg, #E8EEF5 0%, #F5F8FC 60%, transparent 100%);
         border-left: 4px solid var(--accent-gold);
         padding: 10px 20px;
         border-radius: 0 10px 10px 0;
         margin: 20px 0 14px 0;
-        box-shadow: inset 4px 0 12px rgba(184, 134, 11, 0.1);
+        box-shadow: inset 4px 0 12px rgba(0, 122, 227, 0.08);
         position: relative;
     }
     .section-header::after {
@@ -280,12 +254,7 @@ st.markdown("""
     }
 
     /* ==================================================================
-       ALERT CARDS — Critical/Warning/Success notification banners
-       
-       Used for: Early Warning alerts, pipeline alerts, drill-down summaries
-       - .alert-critical: Red left border (#C4515A) — urgent issues
-       - .alert-warning: Gold left border (#C9920A) — caution items
-       - .alert-success: Green left border (#2E7D46) — positive status
+       ALERT CARDS
        ================================================================== */
     .alert-critical {
         background: var(--alert-bg);
@@ -298,7 +267,7 @@ st.markdown("""
     .alert-critical span { color: var(--alert-text); }
     .alert-warning {
         background: var(--alert-bg);
-        border-left: 4px solid #C9920A;
+        border-left: 4px solid #D97706;
         border-radius: 8px;
         padding: 18px 24px;
         margin: 10px 0;
@@ -314,14 +283,7 @@ st.markdown("""
     }
 
     /* ==================================================================
-       RISK BADGES — Colored pill badges for risk grades
-       
-       Used on: Resident Deep Dive profile card, tables
-       - .risk-critical: Red — E grade (75-100% default prob)
-       - .risk-high: Orange — D grade (50-75%)
-       - .risk-medium: Gold — C grade (25-50%)
-       - .risk-low: Teal — B grade (10-25%)
-       - .risk-verylow: Green — A grade (0-10%)
+       RISK BADGES
        ================================================================== */
     .risk-badge {
         display: inline-block;
@@ -334,36 +296,22 @@ st.markdown("""
         font-family: 'Lato', sans-serif;
     }
     .risk-critical { background: #C4515A22; color: #C4515A; border: 1px solid #C4515A44; }
-    .risk-high { background: #C96B3022; color: #C96B30; border: 1px solid #C96B3044; }
-    .risk-medium { background: #C9920A22; color: #C9920A; border: 1px solid #C9920A44; }
-    .risk-low { background: #3D8B5E22; color: #3D8B5E; border: 1px solid #3D8B5E44; }
-    .risk-verylow { background: #2E7D4622; color: #2E7D46; border: 1px solid #2E7D4644; }
+    .risk-high     { background: #C96B3022; color: #C96B30; border: 1px solid #C96B3044; }
+    .risk-medium   { background: #D9770622; color: #D97706; border: 1px solid #D9770644; }
+    .risk-low      { background: #007AE322; color: #005BB5; border: 1px solid #007AE344; }
+    .risk-verylow  { background: #2E7D4622; color: #2E7D46; border: 1px solid #2E7D4644; }
 
     /* ==================================================================
-       AI INSIGHT PANEL — "Next Best Actions" recommendation card
-       
-       Appears at the bottom of every page (except Resident Dive)
-       
-       STRUCTURE:
-       .ai-insight-panel
-         .ai-header > .ai-icon (gold gradient square) + .ai-title
-         .ai-body > .ai-action (repeated for each recommendation)
-           .action-icon (▸ arrow)
-           .action-text > .ai-priority (CRITICAL/HIGH/MEDIUM/LOW badge) + text
-       
-       TO CUSTOMIZE:
-       - Panel background: change gradient in .ai-insight-panel
-       - Left accent: change border-left (5px solid #B8860B)
-       - Priority badge colors: .priority-critical/high/medium/low
+       AI INSIGHT PANEL
        ================================================================== */
     .ai-insight-panel {
-        background: linear-gradient(135deg, #FFFDF5 0%, #FFF9EC 50%, #FFFDF5 100%);
-        border: 1px solid #D4B06A;
-        border-left: 5px solid #B8860B;
+        background: linear-gradient(135deg, #F0F7FF 0%, #E8F2FF 50%, #F0F7FF 100%);
+        border: 1px solid #BFDBFE;
+        border-left: 5px solid #007AE3;
         border-radius: 12px;
         padding: 22px 26px;
         margin: 20px 0 28px 0;
-        box-shadow: 0 4px 20px rgba(184, 134, 11, 0.08);
+        box-shadow: 0 4px 20px rgba(0, 122, 227, 0.08);
         position: relative;
     }
     .ai-insight-panel::before {
@@ -373,7 +321,7 @@ st.markdown("""
         right: 0;
         width: 120px;
         height: 120px;
-        background: radial-gradient(circle at top right, rgba(184, 134, 11, 0.04), transparent 70%);
+        background: radial-gradient(circle at top right, rgba(0, 122, 227, 0.04), transparent 70%);
         border-radius: 0 12px 0 0;
     }
     .ai-insight-panel .ai-header {
@@ -383,7 +331,7 @@ st.markdown("""
         margin-bottom: 12px;
     }
     .ai-insight-panel .ai-header .ai-icon {
-        background: linear-gradient(135deg, #B8860B, #D4A017);
+        background: linear-gradient(135deg, #007AE3, #0097FF);
         color: white;
         width: 32px;
         height: 32px;
@@ -398,14 +346,14 @@ st.markdown("""
         font-family: 'Lato', sans-serif;
         font-size: 13px;
         font-weight: 700;
-        color: #B8860B;
+        color: #007AE3;
         letter-spacing: 1.5px;
         text-transform: uppercase;
     }
     .ai-insight-panel .ai-body {
         font-family: 'Lato', sans-serif;
         font-size: 13.5px;
-        color: #3D3D3D;
+        color: #334E68;
         line-height: 1.75;
     }
     .ai-insight-panel .ai-action {
@@ -415,14 +363,14 @@ st.markdown("""
         padding: 8px 0 4px 0;
     }
     .ai-insight-panel .ai-action .action-icon {
-        color: #B8860B;
+        color: #007AE3;
         font-size: 14px;
         margin-top: 2px;
         flex-shrink: 0;
     }
     .ai-insight-panel .ai-action .action-text {
         font-size: 13px;
-        color: #4A4A4A;
+        color: #334E68;
     }
     .ai-insight-panel .ai-priority {
         display: inline-block;
@@ -435,21 +383,12 @@ st.markdown("""
         margin-right: 6px;
     }
     .priority-critical { background: #C4515A22; color: #C4515A; border: 1px solid #C4515A44; }
-    .priority-high { background: #C96B3022; color: #C96B30; border: 1px solid #C96B3044; }
-    .priority-medium { background: #C9920A22; color: #C9920A; border: 1px solid #C9920A44; }
-    .priority-low { background: #2E7D4622; color: #2E7D46; border: 1px solid #2E7D4644; }
+    .priority-high     { background: #C96B3022; color: #C96B30; border: 1px solid #C96B3044; }
+    .priority-medium   { background: #D9770622; color: #D97706; border: 1px solid #D9770644; }
+    .priority-low      { background: #007AE322; color: #005BB5; border: 1px solid #007AE344; }
 
     /* ==================================================================
-       TABS — In-page tab navigation (e.g., Payment Risk has 3 tabs)
-       
-       - Inactive: muted text, no border
-       - Active: gold text + gold bottom border (3px)
-       - Hover: gold text transition
-       
-       TO CUSTOMIZE:
-       - Active color: change var(--accent-gold) references
-       - Tab padding: change padding in [data-baseweb="tab"] (12px 28px)
-       - Font size: change font-size (13px)
+       TABS
        ================================================================== */
     .stTabs [data-baseweb="tab-list"] {
         gap: 4px;
@@ -479,9 +418,7 @@ st.markdown("""
     }
 
     /* ==================================================================
-       DATA TABLES — Styled st.dataframe() components
-       - Rounded corners (10px), border, subtle shadow
-       - Font family forced to Lato for consistency
+       DATA TABLES
        ================================================================== */
     .stDataFrame {
         border: 1px solid var(--border-main);
@@ -489,15 +426,12 @@ st.markdown("""
         overflow: hidden;
         box-shadow: var(--shadow-sm);
     }
-    /* Dataframe header row */
     .stDataFrame [data-testid="stDataFrameResizable"] {
         font-family: 'Lato', sans-serif !important;
     }
 
     /* ==================================================================
-       DRILL-DOWN DROPDOWNS — st.selectbox() used for chart drill-downs
-       - Styled border, rounded corners, Lato font
-       - Label: muted color, uppercase, 12px
+       DRILL-DOWN DROPDOWNS
        ================================================================== */
     .stSelectbox > div > div {
         border-color: var(--border-main) !important;
@@ -514,10 +448,7 @@ st.markdown("""
     }
 
     /* ==================================================================
-       DRILL-DOWN EXPANDERS — st.expander() panels that open on click
-       - Gradient header background
-       - Gold hover color on summary text
-       - Border separator when open
+       DRILL-DOWN EXPANDERS
        ================================================================== */
     .stExpander {
         border: 1px solid var(--border-main) !important;
@@ -532,7 +463,7 @@ st.markdown("""
         font-size: 14px !important;
         color: var(--text-primary) !important;
         padding: 12px 16px !important;
-        background: linear-gradient(90deg, #F5F0E6 0%, var(--bg-card) 100%) !important;
+        background: linear-gradient(90deg, #E8EEF5 0%, var(--bg-card) 100%) !important;
     }
     .stExpander > details > summary:hover {
         color: var(--accent-gold) !important;
@@ -542,16 +473,14 @@ st.markdown("""
     }
 
     /* ==================================================================
-       METRIC CARDS — st.metric() widgets inside drill-down panels
-       - Playfair serif for values, Lato uppercase for labels
-       - Used inside expanders for drill-down KPIs
+       METRIC CARDS
        ================================================================== */
     [data-testid="stMetric"] {
         background: var(--bg-card);
         border: 1px solid var(--border-main);
         border-radius: 10px;
         padding: 14px 12px;
-        box-shadow: 0 1px 6px rgba(0,0,0,0.03);
+        box-shadow: 0 1px 6px rgba(0, 122, 227, 0.04);
     }
     [data-testid="stMetricValue"] {
         color: var(--text-primary) !important;
@@ -568,17 +497,10 @@ st.markdown("""
         font-family: 'Lato', sans-serif !important;
     }
 
-    /* ---- Divider ---- */
     hr { border-color: var(--border-main) !important; }
 
     /* ==================================================================
-       ANIMATIONS — Fade-in effects for page load
-       
-       - sectionFadeIn: Used on section headers, charts, tables, alerts
-       - fadeInUp: Used on KPI cards (defined in KPI section above)
-       - pulse: Used on the LIVE timestamp in header
-       
-       TO DISABLE ANIMATIONS: set animation: none; on each class
+       ANIMATIONS
        ================================================================== */
     @keyframes sectionFadeIn {
         from { opacity: 0; transform: translateY(8px); }
@@ -595,26 +517,16 @@ st.markdown("""
     }
 
     /* ==================================================================
-       PLOTLY CHART CONTAINERS — Wrapper around every Plotly chart
-       
-       - White background, rounded corners (14px), subtle shadow
-       - Modebar (camera, zoom icons) hidden by default, shows on hover
-       - 4px inner padding prevents chart touching the border
-       
-       TO CUSTOMIZE:
-       - Border radius: change border-radius (14px)
-       - Shadow: change box-shadow
-       - Modebar visibility: change opacity values (0 → 0.6)
+       PLOTLY CHART CONTAINERS
        ================================================================== */
     .stPlotlyChart {
         background: var(--bg-chart);
         border: 1px solid var(--border-main);
         border-radius: 14px;
         overflow: hidden;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        box-shadow: 0 2px 12px rgba(0, 122, 227, 0.04);
         padding: 4px;
     }
-    /* Hide Plotly modebar until hover */
     .stPlotlyChart .modebar-container {
         opacity: 0;
         transition: opacity 0.3s ease;
@@ -627,39 +539,24 @@ st.markdown("""
     }
 
     /* ==================================================================
-       STREAMLIT OVERRIDES — Hide default Streamlit UI elements
-       
-       - Hides: hamburger menu, footer, sidebar, collapse button
-       - Reduces top padding from Streamlit's default ~5rem to 1.5rem
-       - This gives a clean, app-like appearance
+       STREAMLIT OVERRIDES
        ================================================================== */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     [data-testid="stSidebar"] { display: none; }
     [data-testid="collapsedControl"] { display: none; }
     
-    .stApp > header { display: none; }          /* Hide Streamlit's header bar */
+    .stApp > header { display: none; }
     .block-container {
-        padding-top: 1.5rem !important;         /* Top padding above ROSHN header */
-        padding-bottom: 1rem !important;        /* Bottom padding after last element */
+        padding-top: 1.5rem !important;
+        padding-bottom: 1rem !important;
     }
     [data-testid="stAppViewBlockContainer"] {
-        padding-top: 1.5rem !important;         /* Backup selector for top padding */
+        padding-top: 1.5rem !important;
     }
 
     /* ==================================================================
-       TOP HEADER BAR — "ROSHN ◆ COMMUNITY INTELLIGENCE" brand bar
-       
-       STRUCTURE:
-       .header-bar
-         .header-brand > .diamond + .name + .subtitle
-         .header-meta > "LIVE" + .time (pulsing gold timestamp)
-       
-       TO CUSTOMIZE:
-       - Logo text size: change .header-brand .name font-size (24px)
-       - Subtitle: change .header-brand .subtitle
-       - Gold border: change border-bottom in .header-bar
-       - Pulse speed: change animation duration in @keyframes pulse (2s)
+       TOP HEADER BAR
        ================================================================== */
     .header-bar {
         display: flex;
@@ -668,14 +565,14 @@ st.markdown("""
         padding: 12px 0 10px 0;
         border-bottom: 2px solid var(--accent-gold);
         margin-bottom: 0;
-        background: linear-gradient(180deg, rgba(184, 134, 11, 0.04) 0%, transparent 100%);
+        background: linear-gradient(180deg, rgba(0, 122, 227, 0.04) 0%, transparent 100%);
     }
     .header-brand {
         display: flex;
         align-items: center;
         gap: 10px;
     }
-    .header-brand .diamond { color: var(--accent-gold); font-size: 9px; text-shadow: 0 0 10px rgba(184, 134, 11, 0.5); }
+    .header-brand .diamond { color: var(--accent-gold); font-size: 9px; text-shadow: 0 0 10px rgba(0, 122, 227, 0.5); }
     .header-brand .name {
         font-family: 'Playfair Display', serif;
         font-size: 24px;
@@ -704,7 +601,6 @@ st.markdown("""
     .header-meta .time { color: var(--accent-gold); font-weight: 700; letter-spacing: 0.5px; }
     .header-meta .time::before { content: ''; display: none; }
     
-    /* ---- Live pulse indicator ---- */
     @keyframes pulse { 
         0%, 100% { opacity: 1; } 
         50% { opacity: 0.3; } 
@@ -735,7 +631,7 @@ st.markdown("""
     }
     .nav-item:hover {
         color: var(--accent-gold);
-        border-bottom-color: rgba(184, 134, 11, 0.4);
+        border-bottom-color: rgba(0, 122, 227, 0.4);
     }
     .nav-item.active {
         color: var(--accent-gold);
@@ -769,10 +665,9 @@ st.markdown("""
     }
     .nav-buttons button:hover {
         color: var(--accent-gold) !important;
-        border-bottom-color: rgba(184, 134, 11, 0.4) !important;
+        border-bottom-color: rgba(0, 122, 227, 0.4) !important;
         background: transparent !important;
     }
-    /* Active page — gold underline, NO red background */
     .nav-buttons [data-testid="stBaseButton-primary"],
     .nav-buttons [data-testid="stBaseButton-primary"]:focus,
     .nav-buttons [data-testid="stBaseButton-primary"]:active,
@@ -808,7 +703,6 @@ st.markdown("""
     .nav-buttons + div {
         margin-top: -8px;
     }
-    /* Reduce default Streamlit block gaps */
     .stApp > div > div > div > div:first-child .stMarkdown,
     .stApp > div > div > div > div:first-child .stMultiSelect {
         margin-bottom: 0;
@@ -824,7 +718,7 @@ st.markdown("""
         opacity: 0.7;
     }
 
-    /* ---- #7: Download button styling ---- */
+    /* ---- Download button styling ---- */
     .stDownloadButton button {
         background: transparent !important;
         color: var(--accent-gold) !important;
@@ -839,7 +733,7 @@ st.markdown("""
     }
     .stDownloadButton button:hover {
         background: var(--accent-gold) !important;
-        color: var(--bg-primary, #FAF8F5) !important;
+        color: #F0F4F8 !important;
     }
 
     /* ---- Inputs ---- */
@@ -879,7 +773,7 @@ st.markdown("""
         background: var(--accent-hover) !important;
     }
 
-    /* ---- Gold accent line ---- */
+    /* ---- Blue accent line ---- */
     .gold-line {
         width: 60px;
         height: 3px;
@@ -897,6 +791,7 @@ st.markdown("""
     }
     .detail-row .label { color: var(--text-muted); font-size: 13px; }
     .detail-row .value { color: var(--text-primary); font-weight: 500; font-size: 13px; }
+
 </style>
 
 <!-- Force light theme -->
