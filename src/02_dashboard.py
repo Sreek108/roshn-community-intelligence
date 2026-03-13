@@ -1,17 +1,4 @@
 #!/usr/bin/env python3
-"""
-============================================================================
-ROSHN Community Intelligence Command Center
-============================================================================
-Enterprise AI for Real Estate Operations
-ML Intelligence & Predictive Analytics Dashboard
-
-Author  : Sreekrishnan
-Version : 1.0
-Run     : streamlit run src/02_dashboard.py
-============================================================================
-"""
-
 import streamlit as st
 import pandas as pd
 import numpy as np
