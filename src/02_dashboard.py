@@ -52,36 +52,54 @@ st.markdown("""
     /* ==================================================================
        CSS VARIABLES - Light Mode (Default)
        ================================================================== */
+    /* ==================================================================
+       THEME VARIABLES — Change these to restyle the entire dashboard
+       
+       HOW TO USE:
+       - Change any value below and it cascades to ALL components
+       - Colors use hex (#B8860B) or rgba for transparency
+       - Sizes use px, rem, or % 
+       - To change the brand color: update --accent-gold
+       - To change the background: update --bg-primary
+       - To change text darkness: update --text-primary
+       ================================================================== */
     :root {
-        --bg-primary: #F7F5F0;
-        --bg-card: #FFFFFF;
-        --bg-sidebar: linear-gradient(180deg, #2C2C2C 0%, #1A1A1A 100%);
-        --bg-section: linear-gradient(90deg, #F2EDE3 0%, transparent 100%);
-        --bg-chart: #FFFFFF;
-        --bg-plot: #FDFCFA;
+        /* ── BACKGROUNDS ─────────────────────────────────────────── */
+        --bg-primary: #F7F5F0;        /* Main page background (warm off-white) */
+        --bg-card: #FFFFFF;            /* KPI cards, chart wrappers, tables */
+        --bg-sidebar: linear-gradient(180deg, #2C2C2C 0%, #1A1A1A 100%);  /* Sidebar gradient (hidden in current layout) */
+        --bg-section: linear-gradient(90deg, #F2EDE3 0%, transparent 100%);  /* Section header background fade */
+        --bg-chart: #FFFFFF;           /* Plotly chart container background */
+        --bg-plot: #FDFCFA;            /* Plotly plot area inside chart */
 
-        --text-primary: #1A1A1A;
-        --text-secondary: #3D3D3D;
-        --text-muted: #7A6C5D;
-        --text-heading2: #8B6914;
-        --text-sidebar: #D4C5B0;
-        --text-chart: #2A2A2A;
+        /* ── TEXT COLORS ─────────────────────────────────────────── */
+        --text-primary: #1A1A1A;       /* Headings, KPI values, strong text */
+        --text-secondary: #3D3D3D;     /* Body paragraphs, descriptions */
+        --text-muted: #7A6C5D;         /* Labels, captions, nav items (inactive) */
+        --text-heading2: #8B6914;      /* H2 subheadings (gold-brown) */
+        --text-sidebar: #D4C5B0;       /* Sidebar text (light for dark sidebar bg) */
+        --text-chart: #2A2A2A;         /* Chart axis labels, tick text */
 
-        --border-main: #D8CDB8;
-        --border-grid: #E8E0D4;
-        --border-sidebar: #3D3D3D;
+        /* ── BORDERS ─────────────────────────────────────────────── */
+        --border-main: #D8CDB8;        /* Card borders, dividers, table borders */
+        --border-grid: #E8E0D4;        /* Chart gridlines (lighter than borders) */
+        --border-sidebar: #3D3D3D;     /* Sidebar borders */
 
-        --accent-gold: #B8860B;
-        --accent-hover: rgba(184, 134, 11, 0.14);
+        /* ── BRAND ACCENT — The signature gold ──────────────────── */
+        --accent-gold: #B8860B;        /* Gold accent: nav active, section bars, AI panel, badges */
+        --accent-hover: rgba(184, 134, 11, 0.14);  /* Gold with transparency for hover states */
 
-        --alert-bg: #FFFDF8;
-        --alert-text: #2A2A2A;
+        /* ── ALERTS ──────────────────────────────────────────────── */
+        --alert-bg: #FFFDF8;           /* Alert card background (warm white) */
+        --alert-text: #2A2A2A;         /* Alert body text */
 
-        --shadow-sm: 0 2px 12px rgba(0,0,0,0.06);
-        --shadow-hover: 0 12px 36px rgba(184, 134, 11, 0.16);
+        /* ── SHADOWS ─────────────────────────────────────────────── */
+        --shadow-sm: 0 2px 12px rgba(0,0,0,0.06);        /* Default card shadow */
+        --shadow-hover: 0 12px 36px rgba(184, 134, 11, 0.16);  /* Hover shadow (gold-tinted) */
 
-        --hover-bg: #1A1A2E;
-        --hover-text: #FAF8F5;
+        /* ── INTERACTIVE STATES ──────────────────────────────────── */
+        --hover-bg: #1A1A2E;           /* Hover background for buttons */
+        --hover-text: #FAF8F5;         /* Hover text color */
     }
 
     /* ==================================================================
@@ -92,17 +110,19 @@ st.markdown("""
     /* ==================================================================
        GLOBAL STYLES
        ================================================================== */
+    /* ==================================================================
+       GLOBAL STYLES — Base app appearance
+       ================================================================== */
     .stApp {
-        font-family: 'Lato', sans-serif;
-        background-color: var(--bg-primary);
+        font-family: 'Lato', sans-serif;       /* Default font for all text */
+        background-color: var(--bg-primary);    /* Page background color */
     }
     
-    /* Smooth scroll */
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; }           /* Smooth scroll between sections */
     
-    /* Remove Streamlit's default column gap */
+    /* Column gap between side-by-side charts/cards */
     [data-testid="stHorizontalBlock"] {
-        gap: 0.75rem;
+        gap: 0.75rem;                           /* Reduce Streamlit's default 1rem gap */
     }
 
     /* ---- Sidebar ---- */
@@ -120,7 +140,13 @@ st.markdown("""
         letter-spacing: 1.5px !important;
     }
 
-    /* ---- Headers ---- */
+    /* ==================================================================
+       TYPOGRAPHY — Page headings (H1, H2, H3) and body text
+       - H1: Playfair Display serif — used for page titles
+       - H2: Playfair Display — used for section subtitles (gold-brown)
+       - H3: Lato sans-serif — used inside section-header bars
+       - Body: Lato — all paragraph and list text
+       ================================================================== */
     h1 {
         color: var(--text-primary) !important;
         font-family: 'Playfair Display', serif !important;
@@ -146,7 +172,18 @@ st.markdown("""
         line-height: 1.7;
     }
 
-    /* ---- KPI Cards ---- */
+    /* ==================================================================
+       KPI CARDS — The 6-column metric cards on every page
+       
+       STRUCTURE: .kpi-card > .kpi-label + .kpi-value + .kpi-delta
+       
+       TO CUSTOMIZE:
+       - Card size: change min-height (currently 145px)
+       - Value font size: change clamp() in .kpi-value (min 22px, max 32px)
+       - Top color bar: set in Python via border-top inline style
+       - Hover lift: change translateY in .kpi-card:hover (-5px)
+       - Animation: change fadeInUp duration (0.5s)
+       ================================================================== */
     .kpi-card {
         background: var(--bg-card);
         border: 1px solid var(--border-main);
@@ -186,11 +223,15 @@ st.markdown("""
         animation: fadeInUp 0.5s ease forwards;
     }
     .kpi-value {
-        font-size: 32px;
+        font-size: clamp(22px, 5vw, 32px);
         font-weight: 700;
         font-family: 'Playfair Display', serif;
         margin: 8px 0;
         line-height: 1.1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
     }
     .kpi-label {
         font-size: 10px;
@@ -210,7 +251,19 @@ st.markdown("""
     .delta-up { color: #2E7D46; }
     .delta-down { color: #C4515A; }
 
-    /* ---- Section Headers ---- */
+    /* ==================================================================
+       SECTION HEADERS — Gold-bordered bars above each chart group
+       
+       STRUCTURE: .section-header > h3
+       - Left gold border (4px) acts as visual anchor
+       - Gradient background fades from warm linen to transparent
+       - ::after pseudo-element adds a subtle bottom hairline
+       
+       TO CUSTOMIZE:
+       - Border color: change var(--accent-gold)
+       - Background: change the gradient in .section-header
+       - Font size: change font-size in .section-header h3 (13.5px)
+       ================================================================== */
     .section-header {
         background: linear-gradient(90deg, #F5F0E6 0%, #FDFCFA 60%, transparent 100%);
         border-left: 4px solid var(--accent-gold);
@@ -239,7 +292,14 @@ st.markdown("""
         text-transform: uppercase !important;
     }
 
-    /* ---- Alert Cards ---- */
+    /* ==================================================================
+       ALERT CARDS — Critical/Warning/Success notification banners
+       
+       Used for: Early Warning alerts, pipeline alerts, drill-down summaries
+       - .alert-critical: Red left border (#C4515A) — urgent issues
+       - .alert-warning: Gold left border (#C9920A) — caution items
+       - .alert-success: Green left border (#2E7D46) — positive status
+       ================================================================== */
     .alert-critical {
         background: var(--alert-bg);
         border-left: 4px solid #C4515A;
@@ -266,7 +326,16 @@ st.markdown("""
         box-shadow: var(--shadow-sm);
     }
 
-    /* ---- Risk Badge ---- */
+    /* ==================================================================
+       RISK BADGES — Colored pill badges for risk grades
+       
+       Used on: Resident Deep Dive profile card, tables
+       - .risk-critical: Red — E grade (75-100% default prob)
+       - .risk-high: Orange — D grade (50-75%)
+       - .risk-medium: Gold — C grade (25-50%)
+       - .risk-low: Teal — B grade (10-25%)
+       - .risk-verylow: Green — A grade (0-10%)
+       ================================================================== */
     .risk-badge {
         display: inline-block;
         padding: 5px 16px;
@@ -283,7 +352,23 @@ st.markdown("""
     .risk-low { background: #3D8B5E22; color: #3D8B5E; border: 1px solid #3D8B5E44; }
     .risk-verylow { background: #2E7D4622; color: #2E7D46; border: 1px solid #2E7D4644; }
 
-    /* ---- AI Insight Panel ---- */
+    /* ==================================================================
+       AI INSIGHT PANEL — "Next Best Actions" recommendation card
+       
+       Appears at the bottom of every page (except Resident Dive)
+       
+       STRUCTURE:
+       .ai-insight-panel
+         .ai-header > .ai-icon (gold gradient square) + .ai-title
+         .ai-body > .ai-action (repeated for each recommendation)
+           .action-icon (▸ arrow)
+           .action-text > .ai-priority (CRITICAL/HIGH/MEDIUM/LOW badge) + text
+       
+       TO CUSTOMIZE:
+       - Panel background: change gradient in .ai-insight-panel
+       - Left accent: change border-left (5px solid #B8860B)
+       - Priority badge colors: .priority-critical/high/medium/low
+       ================================================================== */
     .ai-insight-panel {
         background: linear-gradient(135deg, #FFFDF5 0%, #FFF9EC 50%, #FFFDF5 100%);
         border: 1px solid #D4B06A;
@@ -367,7 +452,18 @@ st.markdown("""
     .priority-medium { background: #C9920A22; color: #C9920A; border: 1px solid #C9920A44; }
     .priority-low { background: #2E7D4622; color: #2E7D46; border: 1px solid #2E7D4644; }
 
-    /* ---- Tabs ---- */
+    /* ==================================================================
+       TABS — In-page tab navigation (e.g., Payment Risk has 3 tabs)
+       
+       - Inactive: muted text, no border
+       - Active: gold text + gold bottom border (3px)
+       - Hover: gold text transition
+       
+       TO CUSTOMIZE:
+       - Active color: change var(--accent-gold) references
+       - Tab padding: change padding in [data-baseweb="tab"] (12px 28px)
+       - Font size: change font-size (13px)
+       ================================================================== */
     .stTabs [data-baseweb="tab-list"] {
         gap: 4px;
         background-color: transparent;
@@ -395,7 +491,11 @@ st.markdown("""
         color: var(--accent-gold);
     }
 
-    /* ---- Dataframe ---- */
+    /* ==================================================================
+       DATA TABLES — Styled st.dataframe() components
+       - Rounded corners (10px), border, subtle shadow
+       - Font family forced to Lato for consistency
+       ================================================================== */
     .stDataFrame {
         border: 1px solid var(--border-main);
         border-radius: 10px;
@@ -407,7 +507,11 @@ st.markdown("""
         font-family: 'Lato', sans-serif !important;
     }
 
-    /* ---- Selectbox / Drill-down styling ---- */
+    /* ==================================================================
+       DRILL-DOWN DROPDOWNS — st.selectbox() used for chart drill-downs
+       - Styled border, rounded corners, Lato font
+       - Label: muted color, uppercase, 12px
+       ================================================================== */
     .stSelectbox > div > div {
         border-color: var(--border-main) !important;
         border-radius: 8px !important;
@@ -422,7 +526,12 @@ st.markdown("""
         letter-spacing: 0.5px !important;
     }
 
-    /* ---- Expanders (drill-down panels) ---- */
+    /* ==================================================================
+       DRILL-DOWN EXPANDERS — st.expander() panels that open on click
+       - Gradient header background
+       - Gold hover color on summary text
+       - Border separator when open
+       ================================================================== */
     .stExpander {
         border: 1px solid var(--border-main) !important;
         border-radius: 10px !important;
@@ -445,7 +554,11 @@ st.markdown("""
         border-bottom: 1px solid var(--border-main) !important;
     }
 
-    /* ---- st.metric inside drill-downs ---- */
+    /* ==================================================================
+       METRIC CARDS — st.metric() widgets inside drill-down panels
+       - Playfair serif for values, Lato uppercase for labels
+       - Used inside expanders for drill-down KPIs
+       ================================================================== */
     [data-testid="stMetric"] {
         background: var(--bg-card);
         border: 1px solid var(--border-main);
@@ -471,7 +584,15 @@ st.markdown("""
     /* ---- Divider ---- */
     hr { border-color: var(--border-main) !important; }
 
-    /* ---- #12: Section fade-in animation ---- */
+    /* ==================================================================
+       ANIMATIONS — Fade-in effects for page load
+       
+       - sectionFadeIn: Used on section headers, charts, tables, alerts
+       - fadeInUp: Used on KPI cards (defined in KPI section above)
+       - pulse: Used on the LIVE timestamp in header
+       
+       TO DISABLE ANIMATIONS: set animation: none; on each class
+       ================================================================== */
     @keyframes sectionFadeIn {
         from { opacity: 0; transform: translateY(8px); }
         to { opacity: 1; transform: translateY(0); }
@@ -486,7 +607,18 @@ st.markdown("""
         animation: sectionFadeIn 0.4s ease forwards;
     }
 
-    /* ---- Plotly Charts ---- */
+    /* ==================================================================
+       PLOTLY CHART CONTAINERS — Wrapper around every Plotly chart
+       
+       - White background, rounded corners (14px), subtle shadow
+       - Modebar (camera, zoom icons) hidden by default, shows on hover
+       - 4px inner padding prevents chart touching the border
+       
+       TO CUSTOMIZE:
+       - Border radius: change border-radius (14px)
+       - Shadow: change box-shadow
+       - Modebar visibility: change opacity values (0 → 0.6)
+       ================================================================== */
     .stPlotlyChart {
         background: var(--bg-chart);
         border: 1px solid var(--border-main);
@@ -507,23 +639,41 @@ st.markdown("""
         font-size: 13px !important;
     }
 
-    /* ---- Hide Streamlit Branding & Sidebar ---- */
+    /* ==================================================================
+       STREAMLIT OVERRIDES — Hide default Streamlit UI elements
+       
+       - Hides: hamburger menu, footer, sidebar, collapse button
+       - Reduces top padding from Streamlit's default ~5rem to 1.5rem
+       - This gives a clean, app-like appearance
+       ================================================================== */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     [data-testid="stSidebar"] { display: none; }
     [data-testid="collapsedControl"] { display: none; }
     
-    /* ---- Kill Streamlit default top padding ---- */
-    .stApp > header { display: none; }
+    .stApp > header { display: none; }          /* Hide Streamlit's header bar */
     .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 1rem !important;
+        padding-top: 1.5rem !important;         /* Top padding above ROSHN header */
+        padding-bottom: 1rem !important;        /* Bottom padding after last element */
     }
     [data-testid="stAppViewBlockContainer"] {
-        padding-top: 1.5rem !important;
+        padding-top: 1.5rem !important;         /* Backup selector for top padding */
     }
 
-    /* ---- Top Header Bar ---- */
+    /* ==================================================================
+       TOP HEADER BAR — "ROSHN ◆ COMMUNITY INTELLIGENCE" brand bar
+       
+       STRUCTURE:
+       .header-bar
+         .header-brand > .diamond + .name + .subtitle
+         .header-meta > "LIVE" + .time (pulsing gold timestamp)
+       
+       TO CUSTOMIZE:
+       - Logo text size: change .header-brand .name font-size (24px)
+       - Subtitle: change .header-brand .subtitle
+       - Gold border: change border-bottom in .header-bar
+       - Pulse speed: change animation duration in @keyframes pulse (2s)
+       ================================================================== */
     .header-bar {
         display: flex;
         align-items: center;
@@ -1261,6 +1411,10 @@ def render_top_nav():
             <span class="name">ROSHN</span>
             <span class="diamond">◆</span>
             <span class="subtitle">Community Intelligence</span>
+        </div>
+        <div class="header-meta">
+            <span>LIVE</span>&ensp;
+            <span class="time">◉ {datetime.now().strftime("%d %b %Y, %H:%M")}</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
