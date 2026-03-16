@@ -3,7 +3,7 @@
 ============================================================================
 ROSHN Community Intelligence Command Center
 ============================================================================
-Step 10 · ML Intelligence &amp; Reporting
+Enterprise AI for Real Estate Operations
 ML Intelligence & Predictive Analytics Dashboard
 
 Author  : Sreekrishnan
@@ -1272,14 +1272,14 @@ def risk_badge(grade):
 # TOP NAVIGATION
 # ============================================================================
 NAV_PAGES = [
-    "ML Insights",       # Step 10 — Executive Intelligence & Reporting
-    "Collections",       # Step 9 — Payment Risk & Collections
-    "Resident Services", # Steps 6-7 — Service Requests & Case Management
-    "Satisfaction",      # Resident Sentiment & NPS Analytics
-    "Lead to Sale",      # Steps 1-5 — Lead Generation → Sales Conversion
-    "Community",         # Step 8 — Amenity Booking & Facility Services
-    "AI Agents",         # Unified AI Agent Operations
-    "Resident 360",      # Individual Resident Lifecycle View
+    "Overview",
+    "Payment Risk",
+    "Complaints",
+    "Sentiment",
+    "Leads",
+    "Demand",
+    "AI Performance",
+    "Resident Dive",
 ]
 
 def render_top_nav():
@@ -1354,10 +1354,10 @@ def page_executive_summary(residents, payments, complaints, bookings, interactio
     # Header
     st.markdown("""
     <div style="text-align: center; padding: 4px 0 16px 0;">
-        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 4px; text-transform: uppercase; font-family: 'Lato', sans-serif; font-weight: 600;">Step 10 · ML Intelligence &amp; Reporting</div>
+        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 4px; text-transform: uppercase; font-family: 'Lato', sans-serif; font-weight: 600;">Enterprise AI for Real Estate Operations</div>
         <h1 style="font-size: 30px; margin: 8px 0 4px 0; font-family: 'Playfair Display', serif !important;">Community Intelligence Command Center</h1>
         <div class="gold-line"></div>
-        <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Predictive Analytics & AI-Driven Operational Insights</p>
+        <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Real-Time Analytics & Predictive Intelligence</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -1530,8 +1530,8 @@ def page_payment_risk(residents, payments):
     
     st.markdown("""
     <div style="padding: 4px 0 12px 0;">
-        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Step 9 · Collections Intelligence</div>
-        <h1 style="font-size: 28px; margin-top: 8px;">Collections & Payment Risk Intelligence</h1>
+        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Risk Analytics</div>
+        <h1 style="font-size: 28px; margin-top: 8px;">Payment Risk Intelligence</h1>
         <p style="color: var(--text-muted);">Predictive default scoring, early warning alerts, and portfolio risk analysis</p>
     </div>
     """, unsafe_allow_html=True)
@@ -1754,9 +1754,9 @@ def page_complaint_intelligence(residents, complaints):
     
     st.markdown("""
     <div style="padding: 4px 0 12px 0;">
-        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Steps 6-7 · Resident Services &amp; Case Management</div>
-        <h1 style="font-size: 28px; margin-top: 8px;">Resident Services & Case Management</h1>
-        <p style="color: var(--text-muted);">Service request management, case routing, escalation tracking, and resolution analytics</p>
+        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Service Analytics</div>
+        <h1 style="font-size: 28px; margin-top: 8px;">Complaint Intelligence</h1>
+        <p style="color: var(--text-muted);">Complaint heatmaps, category analysis, resolution tracking, and trend detection</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -1917,9 +1917,9 @@ def page_sentiment_satisfaction(residents, interactions, complaints):
     
     st.markdown("""
     <div style="padding: 4px 0 12px 0;">
-        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Resident Satisfaction Analytics</div>
-        <h1 style="font-size: 28px; margin-top: 8px;">Resident Satisfaction Analytics</h1>
-        <p style="color: var(--text-muted);">Resident sentiment, satisfaction scoring, and experience quality metrics</p>
+        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Resident Experience</div>
+        <h1 style="font-size: 28px; margin-top: 8px;">Sentiment & Satisfaction</h1>
+        <p style="color: var(--text-muted);">Resident sentiment trends, satisfaction scoring, and NPS analysis</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -2086,7 +2086,7 @@ def page_lead_intelligence(leads):
     
     st.markdown("""
     <div style="padding: 4px 0 12px 0;">
-        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Steps 1-5 · Lead Generation to Sales Conversion</div>
+        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Lead Management AI</div>
         <h1 style="font-size: 28px; margin-top: 8px;">Lead Intelligence & Conversion Analytics</h1>
         <p style="color: var(--text-muted);">AI-powered lead scoring, funnel analytics, source performance, and agent productivity</p>
     </div>
@@ -2515,9 +2515,9 @@ def page_demand_forecasting(bookings, complaints, interactions):
     
     st.markdown("""
     <div style="padding: 4px 0 12px 0;">
-        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Step 8 · Community Services &amp; Amenity Management</div>
-        <h1 style="font-size: 28px; margin-top: 8px;">Community Services & Amenity Management</h1>
-        <p style="color: var(--text-muted);">Facility bookings, amenity usage by community, and service demand patterns</p>
+        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Operations Planning</div>
+        <h1 style="font-size: 28px; margin-top: 8px;">Community Amenity Demand & Resource Planning</h1>
+        <p style="color: var(--text-muted);">Facility booking patterns by community, peak usage analysis, and resource optimization</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -2780,8 +2780,8 @@ def page_ai_performance(interactions, residents, leads):
     
     st.markdown("""
     <div style="padding: 4px 0 12px 0;">
-        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">AI Agent Operations · 3 Agents Unified</div>
-        <h1 style="font-size: 28px; margin-top: 8px;">AI Agent Operations Command Center</h1>
+        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">AI Operations Command Center</div>
+        <h1 style="font-size: 28px; margin-top: 8px;">Unified AI Agent Performance</h1>
         <p style="color: var(--text-muted);">Cross-agent monitoring: Debt Collection AI · Customer Care AI · Lead Management AI</p>
     </div>
     """, unsafe_allow_html=True)
@@ -3141,9 +3141,9 @@ def page_resident_deep_dive(residents, payments, complaints, interactions):
     
     st.markdown("""
     <div style="padding: 4px 0 12px 0;">
-        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Resident 360° · Full Lifecycle View</div>
-        <h1 style="font-size: 28px; margin-top: 8px;">Resident 360° — Full Lifecycle View</h1>
-        <p style="color: var(--text-muted);">Complete resident lifecycle: risk profile, payment history, complaints, and interactions</p>
+        <div style="font-size: 10px; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">Individual Profile</div>
+        <h1 style="font-size: 28px; margin-top: 8px;">Resident Deep Dive</h1>
+        <p style="color: var(--text-muted);">Individual resident risk profile, payment history, and engagement analysis</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -3337,19 +3337,19 @@ interactions_f = apply_filters(interactions, filter_communities, filter_zones)
 leads_f = apply_filters(leads, filter_communities, filter_zones, comm_col="community_interest") if not leads.empty else leads
 
 # Route to page
-if page == "ML Insights":
+if page == "Overview":
     page_executive_summary(residents_f, payments_f, complaints_f, bookings_f, interactions_f)
-elif page == "Collections":
+elif page == "Payment Risk":
     page_payment_risk(residents_f, payments_f)
-elif page == "Resident Services":
+elif page == "Complaints":
     page_complaint_intelligence(residents_f, complaints_f)
-elif page == "Satisfaction":
+elif page == "Sentiment":
     page_sentiment_satisfaction(residents_f, interactions_f, complaints_f)
-elif page == "Lead to Sale":
+elif page == "Leads":
     page_lead_intelligence(leads_f)
-elif page == "Community":
+elif page == "Demand":
     page_demand_forecasting(bookings_f, complaints_f, interactions_f)
-elif page == "AI Agents":
+elif page == "AI Performance":
     page_ai_performance(interactions_f, residents_f, leads_f)
-elif page == "Resident 360":
+elif page == "Resident Dive":
     page_resident_deep_dive(residents_f, payments_f, complaints_f, interactions_f)
